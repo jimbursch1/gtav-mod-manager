@@ -1,0 +1,57 @@
+<UserControl x:Class="GtavModManager.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:GtavModManager.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20" MaxWidth="600">
+
+            <TextBlock Text="Settings" FontSize="18" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,20" />
+
+            <!-- GTA V Root -->
+            <TextBlock Style="{StaticResource LabelStyle}" Text="GTA V Root Directory *" />
+            <DockPanel Margin="0,0,0,4">
+                <Button Style="{StaticResource ButtonStyle}" Content="Browse" DockPanel.Dock="Right"
+                        Command="{Binding BrowseGtavRootCommand}" Margin="8,0,0,0" />
+                <TextBox Style="{StaticResource TextBoxStyle}"
+                         Text="{Binding GtavRootPath, UpdateSourceTrigger=PropertyChanged}" />
+            </DockPanel>
+            <TextBlock FontSize="11" Margin="0,0,0,16">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="✓ Valid path" />
+                        <Setter Property="Foreground" Value="{StaticResource EnabledBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsGtavRootValid}" Value="False">
+                                <Setter Property="Text" Value="⚠ Path not found — enter the folder containing GTA5.exe" />
+                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!-- Quarantine folder -->
+            <TextBlock Style="{StaticResource LabelStyle}" Text="Quarantine Folder (where disabled mods are stored)" />
+            <DockPanel Margin="0,0,0,4">
+                <Button Style="{StaticResource ButtonStyle}" Content="Browse" DockPanel.Dock="Right"
+                        Command="{Binding BrowseQuarantineCommand}" Margin="8,0,0,0" />
+                <TextBox Style="{StaticResource TextBoxStyle}"
+                         Text="{Binding QuarantineFolder, UpdateSourceTrigger=PropertyChanged}" />
+            </DockPanel>
+            <TextBlock Text="Leave blank to use &lt;GTA V Root&gt;\ModManager\Disabled"
+                       Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,20" />
+
+            <!-- Save -->
+            <Button Style="{StaticResource AccentButtonStyle}" Content="Save Settings"
+                    Command="{Binding SaveCommand}"
+                    HorizontalAlignment="Left" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

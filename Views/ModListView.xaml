@@ -1,0 +1,108 @@
+<UserControl x:Class="GtavModManager.Views.ModListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:GtavModManager.Converters">
+
+    <UserControl.Resources>
+        <conv:ModStatusToColorConverter x:Key="StatusToColor" />
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,8,8,4" >
+            <TextBox Style="{StaticResource TextBoxStyle}"
+                     Width="220"
+                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                     Tag="Search mods..."
+                     Margin="0,0,8,0" />
+            <Button Style="{StaticResource ButtonStyle}"
+                    Content="+ Add Mod"
+                    Command="{Binding AddModCommand}"
+                    Margin="0,0,8,0" />
+            <Button Style="{StaticResource ButtonStyle}"
+                    Content="Refresh"
+                    Command="{Binding RefreshCommand}" />
+        </StackPanel>
+
+        <!-- Error banner -->
+        <Border Grid.Row="0" Background="#44EF5350" Padding="8,4"
+                Margin="8,0,8,0"
+                VerticalAlignment="Bottom">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding OperationError}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding OperationError}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Foreground="#FFEF5350" Text="{Binding OperationError}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- Mod DataGrid -->
+        <DataGrid Grid.Row="1"
+                  Style="{StaticResource DataGridStyle}"
+                  ItemsSource="{Binding FilteredMods}"
+                  SelectedItem="{Binding SelectedMod}"
+                  Margin="8,4,8,4">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="80" />
+                <DataGridTextColumn Header="Author" Binding="{Binding Author}" Width="120" />
+                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="100" />
+                <DataGridTemplateColumn Header="Status" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Status}"
+                                       Foreground="{Binding Status, Converter={StaticResource StatusToColor}}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="!" Width="24">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="⚠"
+                                       Foreground="{StaticResource WarningBrush}"
+                                       Visibility="{Binding HasConflicts, Converter={StaticResource BoolToVis}}"
+                                       ToolTip="This mod has conflicts"
+                                       HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource ButtonStyle}"
+                                    Content="{Binding Status}"
+                                    Command="{Binding DataContext.ToggleModCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                    CommandParameter="{Binding}"
+                                    Padding="6,2"
+                                    Margin="2" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Loading indicator -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="8,4"
+                    Visibility="{Binding IsOperationRunning, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="Working..." Foreground="{StaticResource AccentBrush}" />
+        </StackPanel>
+
+    </Grid>
+</UserControl>

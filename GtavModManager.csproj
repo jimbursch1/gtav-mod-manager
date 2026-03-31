@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+          Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B2F4E8A1-7C3D-4F9E-A5B2-8D1C6E7F4A3B}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GtavModManager</RootNamespace>
+    <AssemblyName>GtavModManager</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Framework references -->
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.VisualBasic" />
+    <!-- WPF -->
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+    <!-- For FolderBrowserDialog and OpenFileDialog -->
+    <Reference Include="System.Windows.Forms" />
+    <!-- JSON -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>libs\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App entry -->
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+
+    <!-- Main Window -->
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+
+    <!-- Views -->
+    <Page Include="Views\ModListView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\ModListView.xaml.cs"><DependentUpon>ModListView.xaml</DependentUpon></Compile>
+    <Page Include="Views\ModDetailView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\ModDetailView.xaml.cs"><DependentUpon>ModDetailView.xaml</DependentUpon></Compile>
+    <Page Include="Views\KeybindManagerView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\KeybindManagerView.xaml.cs"><DependentUpon>KeybindManagerView.xaml</DependentUpon></Compile>
+    <Page Include="Views\ConflictReportView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\ConflictReportView.xaml.cs"><DependentUpon>ConflictReportView.xaml</DependentUpon></Compile>
+    <Page Include="Views\ProfileManagerView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\ProfileManagerView.xaml.cs"><DependentUpon>ProfileManagerView.xaml</DependentUpon></Compile>
+    <Page Include="Views\SettingsView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\SettingsView.xaml.cs"><DependentUpon>SettingsView.xaml</DependentUpon></Compile>
+    <Page Include="Views\AddModDialog.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\AddModDialog.xaml.cs"><DependentUpon>AddModDialog.xaml</DependentUpon></Compile>
+
+    <!-- Resources -->
+    <Page Include="Resources\Colors.xaml"><Generator>MSBuild:Compile</Generator></Page>
+    <Page Include="Resources\Styles.xaml"><Generator>MSBuild:Compile</Generator></Page>
+
+    <!-- Core models -->
+    <Compile Include="Core\Enums.cs" />
+    <Compile Include="Core\Mod.cs" />
+    <Compile Include="Core\ModDependency.cs" />
+    <Compile Include="Core\Keybind.cs" />
+    <Compile Include="Core\Profile.cs" />
+    <Compile Include="Core\ConflictReport.cs" />
+    <Compile Include="Core\AppSettings.cs" />
+
+    <!-- Data -->
+    <Compile Include="Data\SchemaVersion.cs" />
+    <Compile Include="Data\InventoryRepository.cs" />
+    <Compile Include="Data\ProfileRepository.cs" />
+    <Compile Include="Data\SettingsRepository.cs" />
+
+    <!-- Services -->
+    <Compile Include="Services\FileOperationService.cs" />
+    <Compile Include="Services\ModInventoryService.cs" />
+    <Compile Include="Services\QuarantineService.cs" />
+    <Compile Include="Services\ConflictDetectionService.cs" />
+    <Compile Include="Services\KeybindParserService.cs" />
+    <Compile Include="Services\ProfileService.cs" />
+    <Compile Include="Services\LoadOrderService.cs" />
+
+    <!-- ViewModels -->
+    <Compile Include="ViewModels\ViewModelBase.cs" />
+    <Compile Include="ViewModels\ModRowViewModel.cs" />
+    <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\ModListViewModel.cs" />
+    <Compile Include="ViewModels\ModDetailViewModel.cs" />
+    <Compile Include="ViewModels\ConflictReportViewModel.cs" />
+    <Compile Include="ViewModels\KeybindManagerViewModel.cs" />
+    <Compile Include="ViewModels\ProfileManagerViewModel.cs" />
+    <Compile Include="ViewModels\SettingsViewModel.cs" />
+
+    <!-- Converters -->
+    <Compile Include="Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Converters\ModStatusToColorConverter.cs" />
+    <Compile Include="Converters\ConflictSeverityToBrushConverter.cs" />
+
+    <!-- Properties -->
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <!-- Post-build: copy to dist folder if GTAV_MOD_MANAGER_DIST is set -->
+  <PropertyGroup Condition="'$(GTAV_MOD_MANAGER_DIST)' != ''">
+    <PostBuildEvent>xcopy /Y "$(TargetPath)" "$(GTAV_MOD_MANAGER_DIST)\"
+xcopy /Y "$(TargetDir)Newtonsoft.Json.dll" "$(GTAV_MOD_MANAGER_DIST)\"</PostBuildEvent>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

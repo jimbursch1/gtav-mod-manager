@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Color x:Key="BackgroundColor">#FF1E1E2E</Color>
+    <Color x:Key="SurfaceColor">#FF2A2A3E</Color>
+    <Color x:Key="BorderColor">#FF3A3A5E</Color>
+    <Color x:Key="AccentColor">#FF4FC3F7</Color>
+    <Color x:Key="TextPrimaryColor">#FFECEFF4</Color>
+    <Color x:Key="TextSecondaryColor">#FFA0A8C0</Color>
+    <Color x:Key="EnabledColor">#FF66BB6A</Color>
+    <Color x:Key="DisabledColor">#FFEF5350</Color>
+    <Color x:Key="WarningColor">#FFFFA726</Color>
+    <Color x:Key="ErrorColor">#FFEF5350</Color>
+
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="EnabledBrush" Color="{StaticResource EnabledColor}" />
+    <SolidColorBrush x:Key="DisabledBrush" Color="{StaticResource DisabledColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
+
+</ResourceDictionary>

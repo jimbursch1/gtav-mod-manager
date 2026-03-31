@@ -1,0 +1,70 @@
+<Window x:Class="GtavModManager.Views.AddModDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:GtavModManager.Core"
+        Title="Add Mod"
+        Width="520" Height="380"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Name -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Style="{StaticResource LabelStyle}" Text="Mod Name *" />
+            <TextBox x:Name="NameBox" Style="{StaticResource TextBoxStyle}" />
+        </StackPanel>
+
+        <!-- Type -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <TextBlock Style="{StaticResource LabelStyle}" Text="Mod Type *" />
+            <ComboBox x:Name="TypeCombo"
+                      Background="{StaticResource SurfaceBrush}"
+                      Foreground="{StaticResource TextPrimaryBrush}"
+                      BorderBrush="{StaticResource BorderBrush}">
+                <ComboBoxItem Content="ASI Plugin" Tag="AsiPlugin" IsSelected="True" />
+                <ComboBoxItem Content="ScriptHookVDotNet Script" Tag="ShvdnScript" />
+                <ComboBoxItem Content="LSPDFR Plugin" Tag="LspdfPlugin" />
+                <ComboBoxItem Content="RagePluginHook Plugin" Tag="RagePlugin" />
+                <ComboBoxItem Content="OpenIV Package" Tag="OpenIVPackage" />
+                <ComboBoxItem Content="ELS Config" Tag="ElsConfig" />
+                <ComboBoxItem Content="Standalone Tool" Tag="StandaloneTool" />
+                <ComboBoxItem Content="Other" Tag="Other" />
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Files -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,4">
+            <DockPanel>
+                <TextBlock Style="{StaticResource LabelStyle}" Text="Files (relative paths from GTA V root, one per line)"
+                           DockPanel.Dock="Left" />
+                <Button Style="{StaticResource ButtonStyle}" Content="Browse" DockPanel.Dock="Right"
+                        Click="BrowseFiles_Click" Margin="8,0,0,0" Padding="8,2" />
+            </DockPanel>
+        </StackPanel>
+        <TextBox Grid.Row="3" x:Name="FilesBox"
+                 Style="{StaticResource TextBoxStyle}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 Margin="0,0,0,12" />
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource ButtonStyle}" Content="Cancel"
+                    IsCancel="True" Margin="0,0,8,0" />
+            <Button Style="{StaticResource AccentButtonStyle}" Content="Add Mod"
+                    IsDefault="True" Click="AddMod_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

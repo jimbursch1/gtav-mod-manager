@@ -1,0 +1,135 @@
+using System.IO;
+using GtavModManager.Core;
+using GtavModManager.Data;
+using GtavModManager.Services;
+
+namespace GtavModManager.ViewModels
+{
+    public class MainViewModel : ViewModelBase
+    {
+        private int _selectedTabIndex;
+        private string _statusMessage = "Ready";
+        private int _conflictBadgeCount;
+
+        public int SelectedTabIndex
+        {
+            get => _selectedTabIndex;
+            set => SetProperty(ref _selectedTabIndex, value);
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
+
+        public int ConflictBadgeCount
+        {
+            get => _conflictBadgeCount;
+            set => SetProperty(ref _conflictBadgeCount, value);
+        }
+
+        // Services
+        public AppSettings Settings { get; }
+        public ModInventoryService Inventory { get; }
+        public QuarantineService Quarantine { get; }
+        public ConflictDetectionService ConflictDetection { get; }
+        public ProfileService ProfileSvc { get; }
+        public LoadOrderService LoadOrder { get; }
+        public KeybindParserService KeybindParser { get; }
+
+        // Child ViewModels
+        public ModListViewModel ModList { get; }
+        public ModDetailViewModel ModDetail { get; }
+        public ConflictReportViewModel ConflictReport { get; }
+        public KeybindManagerViewModel KeybindManager { get; }
+        public ProfileManagerViewModel ProfileManager { get; }
+        public SettingsViewModel SettingsVm { get; }
+
+        public MainViewModel()
+        {
+            // Repositories
+            var settingsPath = Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                "GtavModManager", "settings.json");
+            var settingsRepo = new SettingsRepository(settingsPath);
+            Settings = settingsRepo.Load();
+
+            // Derive inventory folder from settings or default
+            string inventoryFolder = !string.IsNullOrEmpty(Settings.InventoryFolder)
+                ? Settings.InventoryFolder
+                : Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                    "GtavModManager");
+
+            Settings.InventoryFolder = inventoryFolder;
+
+            var inventoryRepo = new InventoryRepository(inventoryFolder);
+            var profileRepo = new ProfileRepository(inventoryFolder);
+
+            // Services
+            KeybindParser = new KeybindParserService();
+            Inventory = new ModInventoryService(inventoryRepo, KeybindParser);
+            Inventory.Load();
+
+            var fileOps = new FileOperationService();
+            Quarantine = new QuarantineService(fileOps);
+            ConfigureQuarantine();
+
+            ConflictDetection = new ConflictDetectionService();
+            ProfileSvc = new ProfileService(profileRepo, Quarantine);
+            ProfileSvc.Load();
+            LoadOrder = new LoadOrderService();
+            LoadOrder.Configure(Settings.GtavRootPath ?? "");
+
+            // Child ViewModels
+            ModList = new ModListViewModel(Inventory, Quarantine, ConflictDetection);
+            ModDetail = new ModDetailViewModel(Inventory);
+            ConflictReport = new ConflictReportViewModel(ConflictDetection, Inventory);
+            KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection);
+            ProfileManager = new ProfileManagerViewModel(ProfileSvc, Inventory, Settings);
+            SettingsVm = new SettingsViewModel(settingsRepo, Settings);
+
+            // Wire up events
+            ModList.ModsChanged += OnModsChanged;
+            ConflictReport.ConflictCountChanged += count => ConflictBadgeCount = count;
+
+            // Wire selection: when a row is selected, update detail panel
+            ModList.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ModListViewModel.SelectedMod))
+                    ModDetail.SelectedMod = ModList.SelectedMod?.Mod;
+            };
+
+            // Initial load
+            ModList.Reload();
+            ConflictReport.Rescan();
+            ProfileManager.Reload();
+            KeybindManager.Reload();
+
+            UpdateStatusMessage();
+        }
+
+        private void ConfigureQuarantine()
+        {
+            string qDir = !string.IsNullOrEmpty(Settings.QuarantineFolder)
+                ? Settings.QuarantineFolder
+                : Path.Combine(Settings.GtavRootPath ?? "", "ModManager", "Disabled");
+            Quarantine.Configure(Settings.GtavRootPath ?? "", qDir);
+        }
+
+        private void OnModsChanged()
+        {
+            ConflictReport.Rescan();
+            KeybindManager.Reload();
+            UpdateStatusMessage();
+        }
+
+        private void UpdateStatusMessage()
+        {
+            int total = Inventory.GetAllMods().Count;
+            int enabled = Inventory.GetEnabledMods().Count;
+            StatusMessage = $"{enabled}/{total} mods enabled";
+        }
+    }
+}
