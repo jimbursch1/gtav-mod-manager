@@ -19,7 +19,7 @@
                     Command="{Binding RescanCommand}" Margin="0,0,12,0" />
             <TextBlock Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center">
                 <Run Text="Last scan: " />
-                <Run Text="{Binding LastScanTime, StringFormat='{}{0:HH:mm:ss}'}" />
+                <Run Text="{Binding LastScanTime, Mode=OneWay, StringFormat='{}{0:HH:mm:ss}'}" />
             </TextBlock>
         </StackPanel>
 
@@ -42,7 +42,7 @@
                                                Text="{Binding FilePath}" />
                                     <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0">
                                         <Run Text="Claimed by: " />
-                                        <Run Text="{Binding OwnerModNames, StringFormat='{}{0}'}" />
+                                        <Run Text="{Binding OwnerModNames, Mode=OneWay, StringFormat='{}{0}'}" />
                                     </TextBlock>
                                 </StackPanel>
                             </Border>
@@ -69,11 +69,11 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="11">
-                                                    <Run Text="{Binding ModName}" FontWeight="SemiBold" />
+                                                    <Run Text="{Binding ModName, Mode=OneWay}" FontWeight="SemiBold" />
                                                     <Run Text=" → " />
-                                                    <Run Text="{Binding Action}" />
+                                                    <Run Text="{Binding Action, Mode=OneWay}" />
                                                     <Run Text=" (" />
-                                                    <Run Text="{Binding ConfigFile}" />
+                                                    <Run Text="{Binding ConfigFile, Mode=OneWay}" />
                                                     <Run Text=")" />
                                                 </TextBlock>
                                             </DataTemplate>
@@ -95,9 +95,9 @@
                                     BorderBrush="{Binding Severity, Converter={StaticResource SeverityToBrush}}"
                                     BorderThickness="0,0,0,2" Margin="0,0,0,6" Padding="10,8">
                                 <TextBlock Foreground="{StaticResource TextPrimaryBrush}" FontSize="12">
-                                    <Run Text="{Binding ModName}" FontWeight="SemiBold" />
+                                    <Run Text="{Binding ModName, Mode=OneWay}" FontWeight="SemiBold" />
                                     <Run Text=" requires " />
-                                    <Run Text="{Binding MissingDependency.ModName}" Foreground="{StaticResource ErrorBrush}" />
+                                    <Run Text="{Binding MissingDependency.ModName, Mode=OneWay}" Foreground="{StaticResource ErrorBrush}" />
                                     <Run Text=" which is not enabled." />
                                 </TextBlock>
                             </Border>
