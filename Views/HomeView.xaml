@@ -1,0 +1,232 @@
+<UserControl x:Class="GtavModManager.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:GtavModManager.Converters">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32" MaxWidth="620">
+
+            <!-- Title -->
+            <TextBlock Text="GTA V Mod Manager"
+                       FontSize="26" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       Margin="0,0,0,4" />
+            <TextBlock Text="Manage, organize, and launch your GTA V mod setup."
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="13" Margin="0,0,0,32" />
+
+            <!-- Status cards -->
+            <TextBlock Text="Status" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Margin="0,0,0,8" />
+            <Grid Margin="0,0,0,28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Mods card -->
+                <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Text="MODS ENABLED" />
+                        <TextBlock Foreground="{StaticResource TextPrimaryBrush}" FontSize="28" FontWeight="Bold" Margin="0,4,0,0">
+                            <Run Text="{Binding EnabledCount, Mode=OneWay}" />
+                            <Run Text="/" Foreground="{StaticResource TextSecondaryBrush}" FontSize="16" FontWeight="Normal" />
+                            <Run Text="{Binding TotalCount, Mode=OneWay}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="16" FontWeight="Normal" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Conflicts card -->
+                <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}"
+                        BorderThickness="1" CornerRadius="4" Padding="16,12">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ConflictCount}" Value="0">
+                                    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Text="CONFLICTS" />
+                        <TextBlock FontSize="28" FontWeight="Bold" Margin="0,4,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource EnabledBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ConflictCount}" Value="0">
+                                            <Setter Property="Foreground" Value="{StaticResource EnabledBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="{Binding ConflictCount, Mode=OneWay}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Profile card -->
+                <Border Grid.Column="4" Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="16,12">
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Text="ACTIVE PROFILE" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding ActiveProfileName}" />
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveProfileName}" Value="{x:Null}">
+                                            <Setter Property="Text" Value="None" />
+                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ActiveProfileName}" Value="">
+                                            <Setter Property="Text" Value="None" />
+                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- Launch section -->
+            <TextBlock Text="Launch" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Margin="0,0,0,8" />
+
+            <!-- Not configured warning -->
+            <Border Background="#22FFA726" BorderBrush="{StaticResource WarningBrush}"
+                    BorderThickness="0,0,0,2" Padding="12,10" Margin="0,0,0,12"
+                    Visibility="{Binding GtavRootConfigured, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                <TextBlock Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap">
+                    GTA V root is not configured. Go to the Settings tab and set it before launching.
+                </TextBlock>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+
+                <!-- Launch via RPH -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="20,16" Margin="0,0,12,0"
+                        MinWidth="180">
+                    <StackPanel>
+                        <TextBlock Text="LSPDFR / RPH" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Launch via RAGEPluginHook.exe"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Button Style="{StaticResource AccentButtonStyle}"
+                                Content="Launch"
+                                Command="{Binding LaunchRphCommand}"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="10"
+                                   Margin="0,6,0,0" FontStyle="Italic">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="RAGEPluginHook.exe found" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RphAvailable}" Value="False">
+                                            <Setter Property="Text" Value="RAGEPluginHook.exe not found" />
+                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Launch direct -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="20,16" Margin="0,0,12,0"
+                        MinWidth="180">
+                    <StackPanel>
+                        <TextBlock Text="Freeplay" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Launch GTA5.exe directly"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Button Style="{StaticResource ButtonStyle}"
+                                Content="Launch"
+                                Command="{Binding LaunchDirectCommand}"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="10"
+                                   Margin="0,6,0,0" FontStyle="Italic">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="GTA5.exe found" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding GtaAvailable}" Value="False">
+                                            <Setter Property="Text" Value="GTA5.exe not found" />
+                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Launch via Steam -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="20,16"
+                        MinWidth="180">
+                    <StackPanel>
+                        <TextBlock Text="Steam" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Launch via Steam (app ID 271590)"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Button Style="{StaticResource ButtonStyle}"
+                                Content="Launch"
+                                Command="{Binding LaunchSteamCommand}"
+                                HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+
+            <!-- Launch error -->
+            <Border Background="#44EF5350" BorderBrush="{StaticResource ErrorBrush}"
+                    BorderThickness="0,0,0,2" Padding="12,8" Margin="0,8,0,0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LaunchError}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding LaunchError}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding LaunchError}" Foreground="{StaticResource ErrorBrush}"
+                           TextWrapping="Wrap" />
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

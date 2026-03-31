@@ -23,6 +23,11 @@
                     Style="{StaticResource TabControlStyle}"
                     SelectedIndex="{Binding SelectedTabIndex}">
 
+            <!-- Home tab -->
+            <TabItem Style="{StaticResource TabItemStyle}" Header="Home">
+                <views:HomeView DataContext="{Binding Home}" />
+            </TabItem>
+
             <!-- Mods tab: master-detail layout -->
             <TabItem Style="{StaticResource TabItemStyle}" Header="Mods">
                 <Grid>

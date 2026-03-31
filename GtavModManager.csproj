@@ -96,6 +96,8 @@
     <Compile Include="Views\AddModDialog.xaml.cs"><DependentUpon>AddModDialog.xaml</DependentUpon></Compile>
     <Page Include="Views\ScanResultsDialog.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Compile Include="Views\ScanResultsDialog.xaml.cs"><DependentUpon>ScanResultsDialog.xaml</DependentUpon></Compile>
+    <Page Include="Views\HomeView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\HomeView.xaml.cs"><DependentUpon>HomeView.xaml</DependentUpon></Compile>
 
     <!-- Resources -->
     <Page Include="Resources\Colors.xaml"><Generator>MSBuild:Compile</Generator></Page>
@@ -121,6 +123,7 @@
     <Compile Include="Services\FileOperationService.cs" />
     <Compile Include="Services\SymlinkService.cs" />
     <Compile Include="Services\ModScannerService.cs" />
+    <Compile Include="Services\GameLauncherService.cs" />
     <Compile Include="Services\ModInventoryService.cs" />
     <Compile Include="Services\QuarantineService.cs" />
     <Compile Include="Services\ConflictDetectionService.cs" />
@@ -139,6 +142,7 @@
     <Compile Include="ViewModels\ProfileManagerViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\ScanResultsViewModel.cs" />
+    <Compile Include="ViewModels\HomeViewModel.cs" />
 
     <!-- Converters -->
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />

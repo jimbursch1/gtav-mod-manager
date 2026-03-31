@@ -38,8 +38,10 @@ namespace GtavModManager.ViewModels
         public LoadOrderService LoadOrder { get; }
         public KeybindParserService KeybindParser { get; }
         public ModScannerService Scanner { get; }
+        public GameLauncherService Launcher { get; }
 
         // Child ViewModels
+        public HomeViewModel Home { get; }
         public ModListViewModel ModList { get; }
         public ModDetailViewModel ModDetail { get; }
         public ConflictReportViewModel ConflictReport { get; }
@@ -84,8 +86,11 @@ namespace GtavModManager.ViewModels
             LoadOrder = new LoadOrderService();
             LoadOrder.Configure(Settings.GtavRootPath ?? "");
             Scanner = new ModScannerService();
+            Launcher = new GameLauncherService();
+            Launcher.Configure(Settings.GtavRootPath ?? "");
 
             // Child ViewModels
+            Home = new HomeViewModel(Inventory, ConflictDetection, Launcher, Settings);
             ModList = new ModListViewModel(Inventory, Quarantine, ConflictDetection, Scanner)
             {
                 GtavRoot = Settings.GtavRootPath ?? ""
@@ -113,6 +118,9 @@ namespace GtavModManager.ViewModels
             ProfileManager.Reload();
             KeybindManager.Reload();
 
+            var activeProfile = ProfileSvc.GetActiveProfile(Settings.ActiveProfileId);
+            Home.SetActiveProfileName(activeProfile?.Name ?? "");
+
             UpdateStatusMessage();
         }
 
@@ -129,6 +137,7 @@ namespace GtavModManager.ViewModels
         {
             ConflictReport.Rescan();
             KeybindManager.Reload();
+            Home.Refresh();
             UpdateStatusMessage();
         }
 
