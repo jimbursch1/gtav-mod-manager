@@ -16,6 +16,9 @@ namespace GtavModManager.Services
     ///   - plugins\LSPDFR\*.dll (loose)       → LspdfPlugin (one mod per file)
     ///   - plugins\LSPDFR\<subfolder>\        → LspdfPlugin (one mod per folder)
     ///
+    /// Issue #8: If a loose DLL and a same-named subfolder both exist (e.g.
+    ///   686Callouts.dll + 686Callouts\), they are merged into a single mod entry.
+    ///
     /// Config files (.ini, .xml, .json) sharing a base name or subfolder are
     /// automatically included with their associated mod.
     ///
@@ -36,6 +39,14 @@ namespace GtavModManager.Services
             "dxgi.dll",
             "OpenIV.asi",
             "GtavModManager.exe",
+        };
+
+        // Issue #9: file extensions that are never mod content worth tracking
+        private static readonly HashSet<string> SkipExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".log", ".license", ".version", ".txt", ".md", ".pdb",
+            ".png", ".jpg", ".jpeg", ".gif", ".ico", ".bmp",
+            ".ogg", ".wav", ".mp3", ".bik", ".nfo"
         };
 
         private static readonly HashSet<string> ConfigExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -111,7 +122,7 @@ namespace GtavModManager.Services
             foreach (var file in Directory.GetFiles(root, "*.asi", SearchOption.TopDirectoryOnly))
             {
                 string filename = Path.GetFileName(file);
-                if (IsSystemFile(filename)) continue;
+                if (ShouldSkipFile(filename)) continue;
 
                 string rel = filename;
                 var files = new List<string> { rel };
@@ -136,44 +147,57 @@ namespace GtavModManager.Services
             string scriptsDir = Path.Combine(root, "scripts");
             if (!Directory.Exists(scriptsDir)) return results;
 
-            // Loose .dll and .cs files — one mod each
+            // Issue #8: collect loose DLLs/CS files, keyed by name for subfolder merge
+            var dllResults = new Dictionary<string, ScanResult>(StringComparer.OrdinalIgnoreCase);
             var scriptFiles = Directory.GetFiles(scriptsDir, "*.dll", SearchOption.TopDirectoryOnly)
                 .Concat(Directory.GetFiles(scriptsDir, "*.cs", SearchOption.TopDirectoryOnly));
 
             foreach (var file in scriptFiles)
             {
                 string filename = Path.GetFileName(file);
-                if (IsSystemFile(filename)) continue;
+                if (ShouldSkipFile(filename)) continue;
 
+                string modName = Path.GetFileNameWithoutExtension(file);
                 string rel = Path.Combine("scripts", filename);
                 var files = new List<string> { rel };
-                files.AddRange(FindSiblingConfigs(root, scriptsDir, Path.GetFileNameWithoutExtension(file)));
+                files.AddRange(FindSiblingConfigs(root, scriptsDir, modName));
 
-                results.Add(new ScanResult
+                var result = new ScanResult
                 {
-                    SuggestedName = Path.GetFileNameWithoutExtension(file),
+                    SuggestedName = modName,
                     Type = ModType.ShvdnScript,
                     RelativeFiles = files,
                     AlreadyImported = tracked.Contains(rel)
-                });
+                };
+                dllResults[modName] = result;
             }
 
-            // Subfolders in scripts/ — group as one mod
+            // Subfolders in scripts/ — merge into DLL result if names match
             foreach (var dir in Directory.GetDirectories(scriptsDir))
             {
                 string folderName = Path.GetFileName(dir);
-                var files = GetAllFilesRelative(root, dir);
-                if (files.Count == 0) continue;
+                var folderFiles = GetAllFilesRelative(root, dir);
+                if (folderFiles.Count == 0) continue;
 
-                results.Add(new ScanResult
+                if (dllResults.TryGetValue(folderName, out var existing))
                 {
-                    SuggestedName = folderName,
-                    Type = ModType.ShvdnScript,
-                    RelativeFiles = files,
-                    AlreadyImported = files.Any(f => tracked.Contains(f))
-                });
+                    existing.RelativeFiles.AddRange(folderFiles);
+                    if (folderFiles.Any(f => tracked.Contains(f)))
+                        existing.AlreadyImported = true;
+                }
+                else
+                {
+                    results.Add(new ScanResult
+                    {
+                        SuggestedName = folderName,
+                        Type = ModType.ShvdnScript,
+                        RelativeFiles = folderFiles,
+                        AlreadyImported = folderFiles.Any(f => tracked.Contains(f))
+                    });
+                }
             }
 
+            results.AddRange(dllResults.Values);
             return results;
         }
 
@@ -183,43 +207,56 @@ namespace GtavModManager.Services
             string pluginsDir = Path.Combine(root, "plugins");
             if (!Directory.Exists(pluginsDir)) return results;
 
-            // Loose .dll files directly in plugins\ (not in LSPDFR subfolder)
+            // Issue #8: collect loose DLLs keyed by name for subfolder merge
+            var dllResults = new Dictionary<string, ScanResult>(StringComparer.OrdinalIgnoreCase);
             foreach (var file in Directory.GetFiles(pluginsDir, "*.dll", SearchOption.TopDirectoryOnly))
             {
                 string filename = Path.GetFileName(file);
-                if (IsSystemFile(filename)) continue;
+                if (ShouldSkipFile(filename)) continue;
 
+                string modName = Path.GetFileNameWithoutExtension(file);
                 string rel = Path.Combine("plugins", filename);
                 var files = new List<string> { rel };
-                files.AddRange(FindSiblingConfigs(root, pluginsDir, Path.GetFileNameWithoutExtension(file)));
+                files.AddRange(FindSiblingConfigs(root, pluginsDir, modName));
 
-                results.Add(new ScanResult
+                var result = new ScanResult
                 {
-                    SuggestedName = Path.GetFileNameWithoutExtension(file),
+                    SuggestedName = modName,
                     Type = ModType.RagePlugin,
                     RelativeFiles = files,
                     AlreadyImported = tracked.Contains(rel)
-                });
+                };
+                dllResults[modName] = result;
             }
 
-            // Non-LSPDFR subfolders in plugins\
+            // Non-LSPDFR subfolders in plugins\ — merge into DLL result if names match
             foreach (var dir in Directory.GetDirectories(pluginsDir))
             {
                 string folderName = Path.GetFileName(dir);
                 if (folderName.Equals("LSPDFR", StringComparison.OrdinalIgnoreCase)) continue;
 
-                var files = GetAllFilesRelative(root, dir);
-                if (files.Count == 0) continue;
+                var folderFiles = GetAllFilesRelative(root, dir);
+                if (folderFiles.Count == 0) continue;
 
-                results.Add(new ScanResult
+                if (dllResults.TryGetValue(folderName, out var existing))
                 {
-                    SuggestedName = folderName,
-                    Type = ModType.RagePlugin,
-                    RelativeFiles = files,
-                    AlreadyImported = files.Any(f => tracked.Contains(f))
-                });
+                    existing.RelativeFiles.AddRange(folderFiles);
+                    if (folderFiles.Any(f => tracked.Contains(f)))
+                        existing.AlreadyImported = true;
+                }
+                else
+                {
+                    results.Add(new ScanResult
+                    {
+                        SuggestedName = folderName,
+                        Type = ModType.RagePlugin,
+                        RelativeFiles = folderFiles,
+                        AlreadyImported = folderFiles.Any(f => tracked.Contains(f))
+                    });
+                }
             }
 
+            results.AddRange(dllResults.Values);
             return results;
         }
 
@@ -229,53 +266,67 @@ namespace GtavModManager.Services
             string lspdfDir = Path.Combine(root, "plugins", "LSPDFR");
             if (!Directory.Exists(lspdfDir)) return results;
 
-            // Loose .dll files directly in plugins\LSPDFR\
+            // Issue #8: first pass — collect loose DLLs keyed by name
+            var dllResults = new Dictionary<string, ScanResult>(StringComparer.OrdinalIgnoreCase);
             foreach (var file in Directory.GetFiles(lspdfDir, "*.dll", SearchOption.TopDirectoryOnly))
             {
                 string filename = Path.GetFileName(file);
-                if (IsSystemFile(filename)) continue;
+                if (ShouldSkipFile(filename)) continue;
 
+                string modName = Path.GetFileNameWithoutExtension(file);
                 string rel = Path.Combine("plugins", "LSPDFR", filename);
                 var files = new List<string> { rel };
-                files.AddRange(FindSiblingConfigs(root, lspdfDir, Path.GetFileNameWithoutExtension(file)));
+                files.AddRange(FindSiblingConfigs(root, lspdfDir, modName));
 
-                results.Add(new ScanResult
+                var result = new ScanResult
                 {
-                    SuggestedName = Path.GetFileNameWithoutExtension(file),
+                    SuggestedName = modName,
                     Type = ModType.LspdfPlugin,
                     RelativeFiles = files,
                     AlreadyImported = tracked.Contains(rel)
-                });
+                };
+                dllResults[modName] = result;
             }
 
-            // Subfolders in plugins\LSPDFR\ — each is one mod
+            // Issue #8: second pass — subfolders; merge into DLL result if names match
             foreach (var dir in Directory.GetDirectories(lspdfDir))
             {
                 string folderName = Path.GetFileName(dir);
-                var files = GetAllFilesRelative(root, dir);
-                if (files.Count == 0) continue;
+                var folderFiles = GetAllFilesRelative(root, dir);
+                if (folderFiles.Count == 0) continue;
 
-                results.Add(new ScanResult
+                if (dllResults.TryGetValue(folderName, out var existing))
                 {
-                    SuggestedName = folderName,
-                    Type = ModType.LspdfPlugin,
-                    RelativeFiles = files,
-                    AlreadyImported = files.Any(f => tracked.Contains(f))
-                });
+                    // Merge: DLL + subfolder are the same mod
+                    existing.RelativeFiles.AddRange(folderFiles);
+                    if (folderFiles.Any(f => tracked.Contains(f)))
+                        existing.AlreadyImported = true;
+                }
+                else
+                {
+                    results.Add(new ScanResult
+                    {
+                        SuggestedName = folderName,
+                        Type = ModType.LspdfPlugin,
+                        RelativeFiles = folderFiles,
+                        AlreadyImported = folderFiles.Any(f => tracked.Contains(f))
+                    });
+                }
             }
 
+            results.AddRange(dllResults.Values);
             return results;
         }
 
         /// <summary>
         /// Returns relative paths (from gtavRoot) of all files in a directory tree,
-        /// skipping system files.
+        /// skipping system and asset files.
         /// </summary>
         private static List<string> GetAllFilesRelative(string gtavRoot, string directory)
         {
             return Directory
                 .GetFiles(directory, "*", SearchOption.AllDirectories)
-                .Where(f => !IsSystemFile(Path.GetFileName(f)))
+                .Where(f => !ShouldSkipFile(Path.GetFileName(f)))
                 .Select(f => MakeRelative(gtavRoot, f))
                 .ToList();
         }
@@ -296,8 +347,14 @@ namespace GtavModManager.Services
             return configs;
         }
 
-        private static bool IsSystemFile(string filename) =>
-            HardSkipFiles.Contains(filename) || KnownFrameworks.All.ContainsKey(filename);
+        // Issue #9: skip known system files and asset-only extensions
+        private static bool ShouldSkipFile(string filename) =>
+            HardSkipFiles.Contains(filename)
+            || KnownFrameworks.All.ContainsKey(filename)
+            || SkipExtensions.Contains(Path.GetExtension(filename));
+
+        // Keep old name as alias so nothing else breaks
+        private static bool IsSystemFile(string filename) => ShouldSkipFile(filename);
 
         private static string MakeRelative(string root, string fullPath)
         {

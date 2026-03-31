@@ -82,6 +82,7 @@ namespace GtavModManager.ViewModels
                     _settings.ActiveProfileId = profile.Id;
                     _inventory.Save();
                     _profiles.Save();
+                    ProfileSwitchCompleted?.Invoke();  // Issue #11
                 }
             }
             finally
@@ -97,6 +98,9 @@ namespace GtavModManager.ViewModels
         }
 
         public System.Action CreateProfileRequested;
+
+        /// <summary>Fired after a profile switch completes successfully.</summary>
+        public System.Action ProfileSwitchCompleted;
 
         public void ConfirmCreateProfile(string name)
         {

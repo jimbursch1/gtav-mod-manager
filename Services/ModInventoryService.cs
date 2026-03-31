@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using GtavModManager.Core;
 using GtavModManager.Data;
 
@@ -84,6 +86,46 @@ namespace GtavModManager.Services
                     .ToList();
 
                 mod.Keybinds = _keybindParser.ScanModFiles(absolutePaths);
+
+                // Issue #10: auto-detect version from DLL file properties
+                foreach (var f in absolutePaths.Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)))
+                {
+                    try
+                    {
+                        var info = FileVersionInfo.GetVersionInfo(f);
+                        string v = info.ProductVersion ?? info.FileVersion;
+                        if (!string.IsNullOrWhiteSpace(v) && v != "0.0.0.0" && v != "1.0.0.0")
+                        {
+                            mod.Version = v.Trim();
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+
+                // Issue #10: fallback — look for <Version> or <ModVersion> in XML config files
+                if (string.IsNullOrEmpty(mod.Version))
+                {
+                    foreach (var f in absolutePaths.Where(p => p.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        try
+                        {
+                            var doc = XDocument.Load(f);
+                            var versionEl = doc.Descendants()
+                                .FirstOrDefault(e =>
+                                    (e.Name.LocalName.Equals("Version", StringComparison.OrdinalIgnoreCase)
+                                     || e.Name.LocalName.Equals("ModVersion", StringComparison.OrdinalIgnoreCase))
+                                    && !e.HasElements
+                                    && !string.IsNullOrWhiteSpace(e.Value));
+                            if (versionEl != null)
+                            {
+                                mod.Version = versionEl.Value.Trim();
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+                }
             }
 
             _mods.Add(mod);

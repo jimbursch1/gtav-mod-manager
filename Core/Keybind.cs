@@ -25,5 +25,9 @@ namespace GtavModManager.Core
 
         [JsonProperty("isAmbiguous")]
         public bool IsAmbiguous { get; set; }
+
+        /// <summary>INI section name where this keybind was found. Used for write-back.</summary>
+        [JsonProperty("iniSection")]
+        public string IniSection { get; set; }
     }
 }

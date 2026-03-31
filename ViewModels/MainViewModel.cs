@@ -99,12 +99,13 @@ namespace GtavModManager.ViewModels
             };
             ModDetail = new ModDetailViewModel(Inventory);
             ConflictReport = new ConflictReportViewModel(ConflictDetection, Inventory);
-            KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection);
+            KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection, KeybindParser);
             ProfileManager = new ProfileManagerViewModel(ProfileSvc, Inventory, Settings);
             SettingsVm = new SettingsViewModel(settingsRepo, Settings, rootDetector);
 
             // Wire up events
             ModList.ModsChanged += OnModsChanged;
+            ProfileManager.ProfileSwitchCompleted += OnModsChanged;  // Issue #11
             SettingsVm.EmergencyRestoreRequested += DoEmergencyRestore;
             ConflictReport.ConflictCountChanged += count => ConflictBadgeCount = count;
 

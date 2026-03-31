@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -34,6 +35,7 @@ namespace GtavModManager.ViewModels
     {
         private readonly ModInventoryService _inventory;
         private readonly ConflictDetectionService _detector;
+        private readonly KeybindParserService _parser;
         private string _filterText;
 
         public ObservableCollection<KeybindRowViewModel> AllKeybinds { get; } = new ObservableCollection<KeybindRowViewModel>();
@@ -50,15 +52,24 @@ namespace GtavModManager.ViewModels
         }
 
         public RelayCommand RunConflictScanCommand { get; }
+        public RelayCommand<KeybindRowViewModel> EditKeybindCommand { get; }
 
-        public KeybindManagerViewModel(ModInventoryService inventory, ConflictDetectionService detector)
+        /// <summary>
+        /// Issue #6: Raised when the user requests to edit a keybind.
+        /// The view's code-behind shows an input dialog and calls ConfirmKeybindEdit.
+        /// </summary>
+        public Action<KeybindRowViewModel> EditKeybindRequested;
+
+        public KeybindManagerViewModel(ModInventoryService inventory, ConflictDetectionService detector, KeybindParserService parser)
         {
             _inventory = inventory;
             _detector = detector;
+            _parser = parser;
 
             FilteredKeybinds = CollectionViewSource.GetDefaultView(AllKeybinds);
             FilteredKeybinds.Filter = FilterRow;
             RunConflictScanCommand = new RelayCommand(Reload);
+            EditKeybindCommand = new RelayCommand<KeybindRowViewModel>(row => EditKeybindRequested?.Invoke(row));
         }
 
         public void Reload()
@@ -67,7 +78,7 @@ namespace GtavModManager.ViewModels
 
             var mods = _inventory.GetEnabledMods();
             var report = _detector.GenerateReport(_inventory.GetAllMods());
-            var conflictedKeys = new System.Collections.Generic.HashSet<string>(
+            var conflictedKeys = new HashSet<string>(
                 report.KeybindConflicts.SelectMany(c => c.Entries.Select(e => $"{e.ModId}|{e.Action}")));
 
             foreach (var mod in mods)
@@ -90,6 +101,36 @@ namespace GtavModManager.ViewModels
                     });
                 }
             }
+        }
+
+        /// <summary>
+        /// Issue #6: Called by the view code-behind after the user confirms an edit.
+        /// Writes the new value back to the config file and refreshes the grid.
+        /// </summary>
+        public void ConfirmKeybindEdit(KeybindRowViewModel row, string newValue)
+        {
+            if (row == null || string.IsNullOrWhiteSpace(newValue)) return;
+
+            var mod = _inventory.GetModById(row.ModId);
+            if (mod == null) return;
+
+            var keybind = mod.Keybinds?.FirstOrDefault(
+                k => k.Action == row.Action && k.ConfigFile == row.ConfigFile);
+            if (keybind == null) return;
+
+            bool ok = _parser.WriteKeybindValue(keybind, newValue.Trim(), keybind.ConfigFile);
+            if (!ok) return;
+
+            // Update in-memory model
+            string[] parts = newValue.Trim().Split('+');
+            keybind.Key = parts[parts.Length - 1].Trim();
+            keybind.Modifiers = parts.Length > 1
+                ? parts.Take(parts.Length - 1).Select(m => m.Trim()).ToList()
+                : new List<string>();
+            keybind.RawValue = newValue.Trim();
+
+            _inventory.Save();
+            Reload();
         }
 
         private bool FilterRow(object obj)
