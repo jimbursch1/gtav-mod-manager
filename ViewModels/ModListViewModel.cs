@@ -13,6 +13,7 @@ namespace GtavModManager.ViewModels
         private readonly ModInventoryService _inventory;
         private readonly QuarantineService _quarantine;
         private readonly ConflictDetectionService _conflicts;
+        private readonly ModScannerService _scanner;
 
         private ModRowViewModel _selectedMod;
         private string _filterText;
@@ -61,27 +62,35 @@ namespace GtavModManager.ViewModels
 
         public RelayCommand<ModRowViewModel> ToggleModCommand { get; }
         public RelayCommand AddModCommand { get; }
+        public RelayCommand ScanModsCommand { get; }
         public RelayCommand<ModRowViewModel> DeleteModCommand { get; }
         public RelayCommand RefreshCommand { get; }
 
         // Raised when the list changes so MainViewModel can update conflict badge
         public event Action ModsChanged;
+        public event Action ScanRequested;
+        public event Action AddModRequested;
+
+        public string GtavRoot { get; set; }
 
         public ModListViewModel(
             ModInventoryService inventory,
             QuarantineService quarantine,
-            ConflictDetectionService conflicts)
+            ConflictDetectionService conflicts,
+            ModScannerService scanner)
         {
             _inventory = inventory;
             _quarantine = quarantine;
             _conflicts = conflicts;
+            _scanner = scanner;
 
             FilteredMods = CollectionViewSource.GetDefaultView(Mods);
             FilteredMods.Filter = FilterMod;
 
             ToggleModCommand = new RelayCommand<ModRowViewModel>(ToggleMod,
                 row => row != null && !_isOperationRunning);
-            AddModCommand = new RelayCommand(OpenAddModDialog);
+            AddModCommand = new RelayCommand(() => AddModRequested?.Invoke());
+            ScanModsCommand = new RelayCommand(() => ScanRequested?.Invoke());
             DeleteModCommand = new RelayCommand<ModRowViewModel>(DeleteMod,
                 row => row != null && !_isOperationRunning);
             RefreshCommand = new RelayCommand(Reload);
@@ -147,14 +156,6 @@ namespace GtavModManager.ViewModels
             }
         }
 
-        private void OpenAddModDialog()
-        {
-            // Opens AddModWindow — wired in code-behind
-            AddModRequested?.Invoke();
-        }
-
-        public event Action AddModRequested;
-
         public void AddNewMod(string name, ModType type, System.Collections.Generic.List<string> files, string gtavRoot)
         {
             var mod = _inventory.ImportMod(name, type, files, gtavRoot);
@@ -174,6 +175,25 @@ namespace GtavModManager.ViewModels
             Mods.Add(new ModRowViewModel(mod));
             RefreshConflictFlags();
             ModsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Runs a scan and returns the results for the dialog to display.
+        /// Returns null if GTA V root is not configured.
+        /// </summary>
+        public System.Collections.Generic.List<Core.ScanResult> RunScan()
+        {
+            if (string.IsNullOrEmpty(GtavRoot)) return null;
+            return _scanner.Scan(GtavRoot, _inventory.GetAllMods());
+        }
+
+        /// <summary>
+        /// Imports a batch of confirmed scan results.
+        /// </summary>
+        public void BulkImport(System.Collections.Generic.List<(string name, ModType type, System.Collections.Generic.List<string> files)> imports)
+        {
+            foreach (var (name, type, files) in imports)
+                AddNewMod(name, type, files, GtavRoot);
         }
 
         private void DeleteMod(ModRowViewModel row)

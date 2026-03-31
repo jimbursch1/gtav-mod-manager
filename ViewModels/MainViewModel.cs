@@ -37,6 +37,7 @@ namespace GtavModManager.ViewModels
         public ProfileService ProfileSvc { get; }
         public LoadOrderService LoadOrder { get; }
         public KeybindParserService KeybindParser { get; }
+        public ModScannerService Scanner { get; }
 
         // Child ViewModels
         public ModListViewModel ModList { get; }
@@ -82,9 +83,13 @@ namespace GtavModManager.ViewModels
             ProfileSvc.Load();
             LoadOrder = new LoadOrderService();
             LoadOrder.Configure(Settings.GtavRootPath ?? "");
+            Scanner = new ModScannerService();
 
             // Child ViewModels
-            ModList = new ModListViewModel(Inventory, Quarantine, ConflictDetection);
+            ModList = new ModListViewModel(Inventory, Quarantine, ConflictDetection, Scanner)
+            {
+                GtavRoot = Settings.GtavRootPath ?? ""
+            };
             ModDetail = new ModDetailViewModel(Inventory);
             ConflictReport = new ConflictReportViewModel(ConflictDetection, Inventory);
             KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection);

@@ -26,6 +26,10 @@
                     Content="+ Add Mod"
                     Command="{Binding AddModCommand}"
                     Margin="0,0,8,0" />
+            <Button Style="{StaticResource AccentButtonStyle}"
+                    Content="Scan for Mods"
+                    Command="{Binding ScanModsCommand}"
+                    Margin="0,0,8,0" />
             <Button Style="{StaticResource ButtonStyle}"
                     Content="Refresh"
                     Command="{Binding RefreshCommand}" />
