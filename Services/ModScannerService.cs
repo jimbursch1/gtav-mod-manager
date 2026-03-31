@@ -19,27 +19,22 @@ namespace GtavModManager.Services
     /// Config files (.ini, .xml, .json) sharing a base name or subfolder are
     /// automatically included with their associated mod.
     ///
-    /// Known system files (ScriptHookV, RPH, etc.) are skipped.
+    /// Known framework files (ScriptHookV, RPH, etc.) are NOT imported as mods
+    /// but are detected and reported separately as DetectedFrameworks. Their
+    /// presence is used to auto-populate Dependencies on each mod candidate.
     /// </summary>
     public class ModScannerService
     {
-        // Files that are GTA V / framework infrastructure — not mods
-        private static readonly HashSet<string> SystemFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // Files that are GTA V itself or engine infrastructure — not frameworks, not mods
+        private static readonly HashSet<string> HardSkipFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "ScriptHookV.dll",
-            "ScriptHookVDotNet.dll",
-            "ScriptHookVDotNet2.dll",
-            "ScriptHookVDotNet3.dll",
-            "RagePluginHook.dll",
-            "RAGENativeUI.dll",
-            "NativeUI.dll",
-            "dinput8.dll",
+            "GTA5.exe",
+            "GTAVLauncher.exe",
+            "PlayGTAV.exe",
             "dsound.dll",
             "d3d11.dll",
             "dxgi.dll",
-            "ASILoader.dll",
             "OpenIV.asi",
-            "scripthookv.dll",
             "GtavModManager.exe",
         };
 
@@ -48,24 +43,64 @@ namespace GtavModManager.Services
             ".ini", ".xml", ".json"
         };
 
-        public List<ScanResult> Scan(string gtavRoot, IReadOnlyList<Mod> existingMods)
+        public ScanReport Scan(string gtavRoot, IReadOnlyList<Mod> existingMods)
         {
             if (string.IsNullOrEmpty(gtavRoot) || !Directory.Exists(gtavRoot))
-                return new List<ScanResult>();
+                return new ScanReport();
+
+            // Detect which known frameworks are present
+            var presentFrameworks = DetectFrameworks(gtavRoot);
 
             // Build a set of files already tracked so we can flag duplicates
             var trackedFiles = new HashSet<string>(
                 existingMods.SelectMany(m => m.Files),
                 StringComparer.OrdinalIgnoreCase);
 
-            var results = new List<ScanResult>();
+            var mods = new List<ScanResult>();
+            mods.AddRange(ScanAsiPlugins(gtavRoot, trackedFiles));
+            mods.AddRange(ScanShvdnScripts(gtavRoot, trackedFiles));
+            mods.AddRange(ScanRagePlugins(gtavRoot, trackedFiles));
+            mods.AddRange(ScanLspdfPlugins(gtavRoot, trackedFiles));
 
-            results.AddRange(ScanAsiPlugins(gtavRoot, trackedFiles));
-            results.AddRange(ScanShvdnScripts(gtavRoot, trackedFiles));
-            results.AddRange(ScanRagePlugins(gtavRoot, trackedFiles));
-            results.AddRange(ScanLspdfPlugins(gtavRoot, trackedFiles));
+            // Auto-populate dependencies based on mod type and present frameworks
+            foreach (var mod in mods)
+            {
+                mod.DetectedDependencies = new List<ModDependency>();
+                foreach (var fw in presentFrameworks)
+                {
+                    if (fw.Framework.RequiredBy.Contains(mod.Type))
+                    {
+                        mod.DetectedDependencies.Add(new ModDependency
+                        {
+                            ModName = fw.Framework.DisplayName,
+                            ModId = fw.Framework.FileName // use filename as a stable identifier
+                        });
+                    }
+                }
+            }
 
-            return results.OrderBy(r => r.AlreadyImported).ThenBy(r => r.Type).ThenBy(r => r.SuggestedName).ToList();
+            return new ScanReport
+            {
+                Mods = mods.OrderBy(r => r.AlreadyImported).ThenBy(r => r.Type).ThenBy(r => r.SuggestedName).ToList(),
+                DetectedFrameworks = presentFrameworks
+            };
+        }
+
+        private List<DetectedFramework> DetectFrameworks(string root)
+        {
+            var found = new List<DetectedFramework>();
+            foreach (var kvp in KnownFrameworks.All)
+            {
+                string fullPath = Path.Combine(root, kvp.Key);
+                // Also check scripts\ and plugins\ for utility DLLs
+                bool present = File.Exists(fullPath)
+                    || File.Exists(Path.Combine(root, "scripts", kvp.Key))
+                    || File.Exists(Path.Combine(root, "plugins", kvp.Key));
+
+                if (present)
+                    found.Add(new DetectedFramework { Framework = kvp.Value, IsPresent = true });
+            }
+            return found;
         }
 
         private List<ScanResult> ScanAsiPlugins(string root, HashSet<string> tracked)
@@ -262,7 +297,7 @@ namespace GtavModManager.Services
         }
 
         private static bool IsSystemFile(string filename) =>
-            SystemFiles.Contains(filename);
+            HardSkipFiles.Contains(filename) || KnownFrameworks.All.ContainsKey(filename);
 
         private static string MakeRelative(string root, string fullPath)
         {

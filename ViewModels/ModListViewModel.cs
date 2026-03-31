@@ -178,10 +178,10 @@ namespace GtavModManager.ViewModels
         }
 
         /// <summary>
-        /// Runs a scan and returns the results for the dialog to display.
+        /// Runs a scan and returns the full report for the dialog to display.
         /// Returns null if GTA V root is not configured.
         /// </summary>
-        public System.Collections.Generic.List<Core.ScanResult> RunScan()
+        public Core.ScanReport RunScan()
         {
             if (string.IsNullOrEmpty(GtavRoot)) return null;
             return _scanner.Scan(GtavRoot, _inventory.GetAllMods());

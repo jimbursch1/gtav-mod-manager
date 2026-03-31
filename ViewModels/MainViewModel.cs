@@ -88,6 +88,7 @@ namespace GtavModManager.ViewModels
             Scanner = new ModScannerService();
             Launcher = new GameLauncherService();
             Launcher.Configure(Settings.GtavRootPath ?? "");
+            var rootDetector = new GtavRootDetectorService();
 
             // Child ViewModels
             Home = new HomeViewModel(Inventory, ConflictDetection, Launcher, Settings);
@@ -99,7 +100,7 @@ namespace GtavModManager.ViewModels
             ConflictReport = new ConflictReportViewModel(ConflictDetection, Inventory);
             KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection);
             ProfileManager = new ProfileManagerViewModel(ProfileSvc, Inventory, Settings);
-            SettingsVm = new SettingsViewModel(settingsRepo, Settings);
+            SettingsVm = new SettingsViewModel(settingsRepo, Settings, rootDetector);
 
             // Wire up events
             ModList.ModsChanged += OnModsChanged;

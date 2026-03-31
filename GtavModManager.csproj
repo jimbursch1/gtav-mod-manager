@@ -112,6 +112,7 @@
     <Compile Include="Core\ConflictReport.cs" />
     <Compile Include="Core\AppSettings.cs" />
     <Compile Include="Core\ScanResult.cs" />
+    <Compile Include="Core\KnownFramework.cs" />
 
     <!-- Data -->
     <Compile Include="Data\SchemaVersion.cs" />
@@ -123,6 +124,7 @@
     <Compile Include="Services\FileOperationService.cs" />
     <Compile Include="Services\SymlinkService.cs" />
     <Compile Include="Services\ModScannerService.cs" />
+    <Compile Include="Services\GtavRootDetectorService.cs" />
     <Compile Include="Services\GameLauncherService.cs" />
     <Compile Include="Services\ModInventoryService.cs" />
     <Compile Include="Services\QuarantineService.cs" />

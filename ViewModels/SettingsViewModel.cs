@@ -1,13 +1,17 @@
 using System.IO;
+using System.Linq;
+using System.Windows;
 using System.Windows.Forms;
 using GtavModManager.Core;
 using GtavModManager.Data;
+using GtavModManager.Services;
 
 namespace GtavModManager.ViewModels
 {
     public class SettingsViewModel : ViewModelBase
     {
         private readonly SettingsRepository _repo;
+        private readonly GtavRootDetectorService _detector;
         private AppSettings _settings;
 
         private string _gtavRootPath;
@@ -39,11 +43,13 @@ namespace GtavModManager.ViewModels
 
         public RelayCommand BrowseGtavRootCommand { get; }
         public RelayCommand BrowseQuarantineCommand { get; }
+        public RelayCommand AutoDetectCommand { get; }
         public RelayCommand SaveCommand { get; }
 
-        public SettingsViewModel(SettingsRepository repo, AppSettings settings)
+        public SettingsViewModel(SettingsRepository repo, AppSettings settings, GtavRootDetectorService detector)
         {
             _repo = repo;
+            _detector = detector;
             _settings = settings;
 
             _gtavRootPath = settings.GtavRootPath ?? "";
@@ -52,7 +58,32 @@ namespace GtavModManager.ViewModels
 
             BrowseGtavRootCommand = new RelayCommand(BrowseGtavRoot);
             BrowseQuarantineCommand = new RelayCommand(BrowseQuarantine);
+            AutoDetectCommand = new RelayCommand(AutoDetect);
             SaveCommand = new RelayCommand(Save, () => IsGtavRootValid);
+        }
+
+        private void AutoDetect()
+        {
+            var candidates = _detector.FindCandidates();
+            if (candidates.Count == 0)
+            {
+                System.Windows.MessageBox.Show(
+                    "GTA V installation not found.\n\nTry browsing manually to the folder containing GTA5.exe.",
+                    "Auto-detect", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (candidates.Count == 1)
+            {
+                GtavRootPath = candidates[0];
+                return;
+            }
+
+            // Multiple candidates — let the user pick
+            var list = string.Join("\n", candidates.Select((p, i) => $"{i + 1}. {p}"));
+            var msg = $"Found {candidates.Count} GTA V installations:\n\n{list}\n\nUsing the first one. You can change it by browsing manually.";
+            System.Windows.MessageBox.Show(msg, "Auto-detect", MessageBoxButton.OK, MessageBoxImage.Information);
+            GtavRootPath = candidates[0];
         }
 
         private void BrowseGtavRoot()
@@ -81,7 +112,7 @@ namespace GtavModManager.ViewModels
         {
             _settings.GtavRootPath = _gtavRootPath;
             _settings.QuarantineFolder = string.IsNullOrEmpty(_quarantineFolder)
-                ? Path.Combine(_gtavRootPath, "ModManager", "Disabled")
+                ? Path.Combine(_gtavRootPath, "ModManager", "storage")
                 : _quarantineFolder;
             _repo.Save(_settings);
         }

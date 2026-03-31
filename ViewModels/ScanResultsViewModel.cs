@@ -62,8 +62,12 @@ namespace GtavModManager.ViewModels
         public RelayCommand SelectAllCommand { get; }
         public RelayCommand SelectNoneCommand { get; }
 
-        public ScanResultsViewModel(System.Collections.Generic.List<ScanResult> results)
+        public System.Collections.Generic.List<DetectedFramework> DetectedFrameworks { get; }
+
+        public ScanResultsViewModel(ScanReport report)
         {
+            DetectedFrameworks = report.DetectedFrameworks;
+            var results = report.Mods;
             foreach (var r in results)
             {
                 var row = new ScanResultRowViewModel(r);

@@ -15,6 +15,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -31,8 +32,29 @@
             </TextBlock>
         </StackPanel>
 
+        <!-- Detected frameworks -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding DetectedFrameworks}" Margin="0,0,0,10">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="3" Margin="0,0,8,4" Padding="6,3">
+                        <TextBlock VerticalAlignment="Center">
+                            <Run Text="✓ " Foreground="{StaticResource EnabledBrush}" />
+                            <Run Text="{Binding Framework.DisplayName, Mode=OneWay}"
+                                 Foreground="{StaticResource TextPrimaryBrush}" FontSize="11" />
+                        </TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- Filter + select all/none -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
             <TextBox Style="{StaticResource TextBoxStyle}" Width="220"
                      Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
                      Margin="0,0,10,0" />
@@ -43,7 +65,7 @@
         </StackPanel>
 
         <!-- Results grid -->
-        <DataGrid Grid.Row="2"
+        <DataGrid Grid.Row="3"
                   Style="{StaticResource DataGridStyle}"
                   ItemsSource="{Binding FilteredRows}"
                   IsReadOnly="False"
@@ -101,7 +123,7 @@
         </DataGrid>
 
         <!-- Footer -->
-        <DockPanel Grid.Row="3">
+        <DockPanel Grid.Row="4">
             <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
                        Foreground="{StaticResource TextSecondaryBrush}">
                 <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="SemiBold"
