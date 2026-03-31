@@ -34,13 +34,15 @@ namespace GtavModManager.Services
 
         private readonly FileOperationService _fileOps;
         private readonly SymlinkService _symlink;
+        private readonly ModLogger _logger;
         private string _gtavRoot;
         private string _storageRoot; // ModManager\storage\
 
-        public QuarantineService(FileOperationService fileOps, SymlinkService symlink)
+        public QuarantineService(FileOperationService fileOps, SymlinkService symlink, ModLogger logger = null)
         {
             _fileOps = fileOps;
             _symlink = symlink;
+            _logger = logger;
         }
 
         public void Configure(string gtavRoot, string storageRoot)
@@ -104,7 +106,11 @@ namespace GtavModManager.Services
                 // If already in storage but not in GTA V root, that's fine — skip
             }
 
+            _logger?.LogSection($"Import: {mod.Name}");
             var moveResult = _fileOps.MoveFilesWithRollback(moves);
+            foreach (var (src, dst) in moves)
+                _logger?.Log("IMPORT", src, moveResult.Success, moveResult.ErrorMessage);
+
             if (!moveResult.Success)
                 return moveResult;
 
@@ -124,6 +130,7 @@ namespace GtavModManager.Services
             if (IsGtavRunning())
                 return OperationResult.Fail("GTA V is running. Close the game before changing mods.");
 
+            _logger?.LogSection($"Enable: {mod.Name}");
             var result = CreateLinks(mod);
             if (result.Success)
                 mod.Status = ModStatus.Enabled;
@@ -142,6 +149,7 @@ namespace GtavModManager.Services
             if (IsGtavRunning())
                 return OperationResult.Fail("GTA V is running. Close the game before changing mods.");
 
+            _logger?.LogSection($"Disable: {mod.Name}");
             var result = RemoveLinks(mod);
             if (result.Success)
                 mod.Status = ModStatus.Disabled;
@@ -186,6 +194,7 @@ namespace GtavModManager.Services
                 }
 
                 createdLinks.Add(gtavFile);
+                _logger?.Log("LINK", $"{storageFile} -> {gtavFile}", true);
             }
 
             return OperationResult.Ok();
@@ -208,7 +217,11 @@ namespace GtavModManager.Services
                 }
 
                 if (!_symlink.DeleteLink(gtavFile))
+                {
+                    _logger?.Log("UNLINK", gtavFile, false, "DeleteLink failed");
                     return OperationResult.Fail($"Failed to remove link: {relativePath}");
+                }
+                _logger?.Log("UNLINK", gtavFile, true);
             }
 
             return OperationResult.Ok();
@@ -216,6 +229,7 @@ namespace GtavModManager.Services
 
         private OperationResult RollbackLinks(List<string> createdLinks, string reason)
         {
+            _logger?.Log("ROLLBACK", $"{createdLinks.Count} links — {reason}", false, reason);
             foreach (var link in createdLinks)
             {
                 try { if (File.Exists(link)) File.Delete(link); }
@@ -237,6 +251,7 @@ namespace GtavModManager.Services
             if (IsGtavRunning())
                 return OperationResult.Fail("GTA V is running. Close the game before restoring.");
 
+            _logger?.LogSection("Emergency Restore");
             var errors = new List<string>();
             foreach (var mod in allMods)
             {
@@ -254,9 +269,11 @@ namespace GtavModManager.Services
                         _fileOps.EnsureDirectory(Path.GetDirectoryName(gtavFile));
                         File.Copy(storageFile, gtavFile, overwrite: false);
                         mod.Status = ModStatus.Enabled;
+                        _logger?.Log("RESTORE", gtavFile, true);
                     }
                     catch (Exception ex)
                     {
+                        _logger?.Log("RESTORE", gtavFile, false, ex.Message);
                         errors.Add($"{relativePath}: {ex.Message}");
                     }
                 }

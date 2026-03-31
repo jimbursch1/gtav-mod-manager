@@ -77,7 +77,8 @@ namespace GtavModManager.ViewModels
 
             var fileOps = new FileOperationService();
             var symlink = new SymlinkService();
-            Quarantine = new QuarantineService(fileOps, symlink);
+            var logger = new ModLogger(Path.Combine(inventoryFolder, "operations.log"));
+            Quarantine = new QuarantineService(fileOps, symlink, logger);
             ConfigureQuarantine();
 
             ConflictDetection = new ConflictDetectionService();

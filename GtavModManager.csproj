@@ -122,6 +122,7 @@
 
     <!-- Services -->
     <Compile Include="Services\FileOperationService.cs" />
+    <Compile Include="Services\ModLogger.cs" />
     <Compile Include="Services\SymlinkService.cs" />
     <Compile Include="Services\ModScannerService.cs" />
     <Compile Include="Services\GtavRootDetectorService.cs" />
