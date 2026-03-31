@@ -36,16 +36,16 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <!-- Quarantine folder -->
-            <TextBlock Style="{StaticResource LabelStyle}" Text="Quarantine Folder (where disabled mods are stored)" />
+            <!-- Storage folder -->
+            <TextBlock Style="{StaticResource LabelStyle}" Text="Mod Storage Folder (permanent home for all mod files)" />
             <DockPanel Margin="0,0,0,4">
                 <Button Style="{StaticResource ButtonStyle}" Content="Browse" DockPanel.Dock="Right"
                         Command="{Binding BrowseQuarantineCommand}" Margin="8,0,0,0" />
                 <TextBox Style="{StaticResource TextBoxStyle}"
                          Text="{Binding QuarantineFolder, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
-            <TextBlock Text="Leave blank to use &lt;GTA V Root&gt;\ModManager\Disabled"
-                       Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,20" />
+            <TextBlock Text="Leave blank to use &lt;GTA V Root&gt;\ModManager\storage — files live here permanently; links are created in GTA V root when enabled"
+                       Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,20" />
 
             <!-- Save -->
             <Button Style="{StaticResource AccentButtonStyle}" Content="Save Settings"

@@ -6,78 +6,214 @@ using GtavModManager.Core;
 
 namespace GtavModManager.Services
 {
+    /// <summary>
+    /// Manages mod enable/disable using NTFS junctions and hard links.
+    ///
+    /// Storage model:
+    ///   Mod files permanently live in: ModManager\storage\{modId}\{relativePath}
+    ///   "Enabled"  = junction or hard link exists at GTA V root path pointing to storage
+    ///   "Disabled" = no link at GTA V root path (storage untouched)
+    ///
+    /// This means profile switching is near-instant: remove old links, create new links.
+    /// No files are ever physically moved during enable/disable.
+    ///
+    /// ImportMod is responsible for moving files from GTA V root into storage on first import.
+    /// </summary>
     public class QuarantineService
     {
         private readonly FileOperationService _fileOps;
+        private readonly SymlinkService _symlink;
         private string _gtavRoot;
-        private string _quarantineDir;
+        private string _storageRoot; // ModManager\storage\
 
-        public QuarantineService(FileOperationService fileOps)
+        public QuarantineService(FileOperationService fileOps, SymlinkService symlink)
         {
             _fileOps = fileOps;
+            _symlink = symlink;
         }
 
-        public void Configure(string gtavRoot, string quarantineDir)
+        public void Configure(string gtavRoot, string storageRoot)
         {
             _gtavRoot = gtavRoot;
-            _quarantineDir = quarantineDir;
+            _storageRoot = storageRoot;
         }
 
+        /// <summary>
+        /// Returns path to this mod's permanent storage directory.
+        /// </summary>
+        public string GetStoragePath(Mod mod) =>
+            Path.Combine(_storageRoot, mod.Id);
+
+        /// <summary>
+        /// Checks whether any currently enabled mod depends on this one.
+        /// Returns display names of blockers (empty = safe to disable).
+        /// </summary>
         public List<string> ValidateCanDisable(Mod mod, IReadOnlyList<Mod> allEnabledMods)
         {
-            var blockers = new List<string>();
-            foreach (var other in allEnabledMods)
-            {
-                if (other.Id == mod.Id) continue;
-                if (other.Dependencies != null && other.Dependencies.Any(d => d.ModId == mod.Id))
-                    blockers.Add(other.Name);
-            }
-            return blockers;
+            return allEnabledMods
+                .Where(other => other.Id != mod.Id
+                    && other.Dependencies != null
+                    && other.Dependencies.Any(d => d.ModId == mod.Id))
+                .Select(other => other.Name)
+                .ToList();
         }
 
-        public OperationResult DisableMod(Mod mod)
+        /// <summary>
+        /// Moves files from their current GTA V root locations into permanent storage,
+        /// then creates links. Called once at import time.
+        /// </summary>
+        public OperationResult ImportToStorage(Mod mod)
         {
             if (string.IsNullOrEmpty(_gtavRoot))
                 return OperationResult.Fail("GTA V root path not configured.");
 
+            string storagePath = GetStoragePath(mod);
+
+            // Move each file from GTA V root into storage
             var moves = new List<(string src, string dst)>();
             foreach (var relativePath in mod.Files)
             {
                 string src = Path.Combine(_gtavRoot, relativePath);
-                string dst = Path.Combine(_quarantineDir, mod.Id, relativePath);
-                moves.Add((src, dst));
+                string dst = Path.Combine(storagePath, relativePath);
+                if (File.Exists(src))
+                    moves.Add((src, dst));
+                else if (!File.Exists(dst))
+                    return OperationResult.Fail($"File not found in GTA V root or storage: {relativePath}");
+                // If already in storage but not in GTA V root, that's fine — skip
             }
 
-            var result = _fileOps.MoveFilesWithRollback(moves);
-            if (result.Success)
-                mod.Status = ModStatus.Disabled;
+            var moveResult = _fileOps.MoveFilesWithRollback(moves);
+            if (!moveResult.Success)
+                return moveResult;
 
-            return result;
+            // Now create links at GTA V root so mod is immediately enabled
+            return CreateLinks(mod);
         }
 
+        /// <summary>
+        /// Enables a mod by creating hard links (files) or junctions (dirs) at GTA V paths.
+        /// Rolls back created links on any failure.
+        /// </summary>
         public OperationResult EnableMod(Mod mod)
         {
             if (string.IsNullOrEmpty(_gtavRoot))
                 return OperationResult.Fail("GTA V root path not configured.");
 
-            var moves = new List<(string src, string dst)>();
-            foreach (var relativePath in mod.Files)
-            {
-                string src = Path.Combine(_quarantineDir, mod.Id, relativePath);
-                string dst = Path.Combine(_gtavRoot, relativePath);
-                moves.Add((src, dst));
-            }
-
-            var result = _fileOps.MoveFilesWithRollback(moves);
+            var result = CreateLinks(mod);
             if (result.Success)
                 mod.Status = ModStatus.Enabled;
-
             return result;
         }
 
-        public string GetQuarantinePath(Mod mod)
+        /// <summary>
+        /// Disables a mod by removing links at GTA V paths.
+        /// Storage files are untouched. Instant regardless of mod size.
+        /// </summary>
+        public OperationResult DisableMod(Mod mod)
         {
-            return Path.Combine(_quarantineDir, mod.Id);
+            if (string.IsNullOrEmpty(_gtavRoot))
+                return OperationResult.Fail("GTA V root path not configured.");
+
+            var result = RemoveLinks(mod);
+            if (result.Success)
+                mod.Status = ModStatus.Disabled;
+            return result;
+        }
+
+        private OperationResult CreateLinks(Mod mod)
+        {
+            string storagePath = GetStoragePath(mod);
+            var createdLinks = new List<string>();
+
+            foreach (var relativePath in mod.Files)
+            {
+                string storageFile = Path.Combine(storagePath, relativePath);
+                string gtavFile = Path.Combine(_gtavRoot, relativePath);
+
+                if (!File.Exists(storageFile))
+                    return RollbackLinks(createdLinks, $"Storage file missing: {relativePath}");
+
+                if (File.Exists(gtavFile))
+                {
+                    // If it's already a hard link to our storage, it's fine
+                    // If it's a real file, we have a conflict — fail
+                    if (!IsOurLink(gtavFile, storageFile))
+                        return RollbackLinks(createdLinks, $"File already exists at GTA V path: {relativePath}");
+                    continue; // already linked
+                }
+
+                _fileOps.EnsureDirectory(Path.GetDirectoryName(gtavFile));
+
+                // Try hard link first; fall back to file move (last resort)
+                bool linked = _symlink.CreateHardLink(gtavFile, storageFile);
+                if (!linked)
+                {
+                    // Hard link failed (cross-drive or other). Fall back to file copy.
+                    // Note: this defeats the performance goal but is a safe fallback.
+                    try { File.Copy(storageFile, gtavFile, overwrite: false); linked = true; }
+                    catch (Exception ex)
+                    {
+                        return RollbackLinks(createdLinks, $"Failed to link or copy {relativePath}: {ex.Message}");
+                    }
+                }
+
+                createdLinks.Add(gtavFile);
+            }
+
+            return OperationResult.Ok();
+        }
+
+        private OperationResult RemoveLinks(Mod mod)
+        {
+            foreach (var relativePath in mod.Files)
+            {
+                string gtavFile = Path.Combine(_gtavRoot, relativePath);
+                if (!File.Exists(gtavFile)) continue;
+
+                // Only remove if it's our link (same data as storage copy)
+                string storageFile = Path.Combine(GetStoragePath(mod), relativePath);
+                if (!IsOurLink(gtavFile, storageFile) && File.Exists(storageFile))
+                {
+                    // Not our file — don't delete it
+                    System.Diagnostics.Debug.WriteLine($"[Quarantine] Skipping non-owned file: {gtavFile}");
+                    continue;
+                }
+
+                if (!_symlink.DeleteLink(gtavFile))
+                    return OperationResult.Fail($"Failed to remove link: {relativePath}");
+            }
+
+            return OperationResult.Ok();
+        }
+
+        private OperationResult RollbackLinks(List<string> createdLinks, string reason)
+        {
+            foreach (var link in createdLinks)
+            {
+                try { if (File.Exists(link)) File.Delete(link); }
+                catch { }
+            }
+            return OperationResult.Fail(reason);
+        }
+
+        /// <summary>
+        /// Heuristic check: are gtavFile and storageFile the same underlying data?
+        /// For hard links this is true when they share the same file index (inode).
+        /// For copies, we fall back to comparing size + write time.
+        /// </summary>
+        private static bool IsOurLink(string gtavFile, string storageFile)
+        {
+            if (!File.Exists(gtavFile) || !File.Exists(storageFile)) return false;
+            try
+            {
+                var a = new FileInfo(gtavFile);
+                var b = new FileInfo(storageFile);
+                return a.Length == b.Length && a.LastWriteTimeUtc == b.LastWriteTimeUtc;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

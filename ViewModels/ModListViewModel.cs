@@ -158,6 +158,18 @@ namespace GtavModManager.ViewModels
         public void AddNewMod(string name, ModType type, System.Collections.Generic.List<string> files, string gtavRoot)
         {
             var mod = _inventory.ImportMod(name, type, files, gtavRoot);
+
+            // Move files from GTA V root into permanent storage, then create links
+            if (files != null && files.Count > 0 && !string.IsNullOrEmpty(gtavRoot))
+            {
+                var importResult = _quarantine.ImportToStorage(mod);
+                if (!importResult.Success)
+                {
+                    OperationError = $"Import warning: {importResult.ErrorMessage}";
+                    // Mod record still saved — user can fix storage manually
+                }
+            }
+
             _inventory.Save();
             Mods.Add(new ModRowViewModel(mod));
             RefreshConflictFlags();

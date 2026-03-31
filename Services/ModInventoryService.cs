@@ -58,7 +58,8 @@ namespace GtavModManager.Services
         /// <summary>
         /// Creates a new Mod record from name, type, and file paths.
         /// Scans config files for keybinds automatically.
-        /// Does NOT move any files on disk.
+        /// Does NOT move files — call QuarantineService.ImportToStorage separately to
+        /// move files into permanent storage and create initial links.
         /// </summary>
         public Mod ImportMod(string name, ModType type, List<string> relativeFilePaths, string gtavRoot = null)
         {
@@ -74,7 +75,7 @@ namespace GtavModManager.Services
                 Keybinds = new List<Keybind>()
             };
 
-            // Scan for keybinds if we have a GTA V root to resolve absolute paths
+            // Scan config files for keybinds before files move to storage
             if (!string.IsNullOrEmpty(gtavRoot) && mod.Files.Count > 0)
             {
                 var absolutePaths = mod.Files

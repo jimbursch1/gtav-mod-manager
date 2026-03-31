@@ -116,6 +116,7 @@
 
     <!-- Services -->
     <Compile Include="Services\FileOperationService.cs" />
+    <Compile Include="Services\SymlinkService.cs" />
     <Compile Include="Services\ModInventoryService.cs" />
     <Compile Include="Services\QuarantineService.cs" />
     <Compile Include="Services\ConflictDetectionService.cs" />

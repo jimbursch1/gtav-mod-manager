@@ -73,7 +73,8 @@ namespace GtavModManager.ViewModels
             Inventory.Load();
 
             var fileOps = new FileOperationService();
-            Quarantine = new QuarantineService(fileOps);
+            var symlink = new SymlinkService();
+            Quarantine = new QuarantineService(fileOps, symlink);
             ConfigureQuarantine();
 
             ConflictDetection = new ConflictDetectionService();
@@ -112,10 +113,11 @@ namespace GtavModManager.ViewModels
 
         private void ConfigureQuarantine()
         {
-            string qDir = !string.IsNullOrEmpty(Settings.QuarantineFolder)
+            // Storage root is where mod files permanently live (not the old "Disabled" quarantine)
+            string storageRoot = !string.IsNullOrEmpty(Settings.QuarantineFolder)
                 ? Settings.QuarantineFolder
-                : Path.Combine(Settings.GtavRootPath ?? "", "ModManager", "Disabled");
-            Quarantine.Configure(Settings.GtavRootPath ?? "", qDir);
+                : Path.Combine(Settings.GtavRootPath ?? "", "ModManager", "storage");
+            Quarantine.Configure(Settings.GtavRootPath ?? "", storageRoot);
         }
 
         private void OnModsChanged()
