@@ -68,6 +68,7 @@ namespace GtavModManager.Cli
                 case "disable": return CmdDisable(Tail(args), json);
                 case "scan":    return CmdScan(json);
                 case "profile": return CmdProfile(Tail(args), json);
+                case "restore": return CmdRestore();
                 default:
                     Console.Error.WriteLine($"error: unknown command '{args[0]}'. Run with 'help' for usage.");
                     return 1;
@@ -286,6 +287,22 @@ namespace GtavModManager.Cli
             return 1;
         }
 
+        private static int CmdRestore()
+        {
+            var (inventory, quarantine, _) = LoadServices();
+            var result = quarantine.RestoreAll(inventory.GetAllMods());
+            inventory.Save();
+
+            if (!result.Success)
+            {
+                Console.Error.WriteLine($"error: {result.ErrorMessage}");
+                return 1;
+            }
+
+            Console.WriteLine("All mod files restored to GTA V directory.");
+            return 0;
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static (ModInventoryService inventory, QuarantineService quarantine, AppSettings settings) LoadServices()
@@ -369,6 +386,7 @@ namespace GtavModManager.Cli
             Console.WriteLine("  scan                  Scan GTA V directory for unimported mods");
             Console.WriteLine("  profile list          List saved profiles");
             Console.WriteLine("  profile switch <name> Switch to a profile");
+            Console.WriteLine("  restore               Copy all mod files from storage back to GTA V directory");
             Console.WriteLine("  help                  Show this message");
             Console.WriteLine();
             Console.WriteLine("Options:");

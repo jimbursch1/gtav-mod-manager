@@ -82,6 +82,11 @@ const TOOLS = [
             required: ['name'],
         },
     },
+    {
+        name: 'emergency_restore',
+        description: 'Copy all mod files from storage back to the GTA V directory and mark all mods as enabled. Use this if the game will not launch or mod files are missing after a crash or failed operation.',
+        inputSchema: { type: 'object', properties: {} },
+    },
 ];
 
 // ── Server ──────────────────────────────────────────────────────────────────
@@ -123,6 +128,10 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         }
         case 'switch_profile': {
             const r = await cli('profile', 'switch', args.name);
+            return result(r.text, !r.ok);
+        }
+        case 'emergency_restore': {
+            const r = await cli('restore');
             return result(r.text, !r.ok);
         }
         default:

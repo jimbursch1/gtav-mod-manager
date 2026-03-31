@@ -122,6 +122,7 @@ Restart Claude Desktop. You can then say things like:
 | `scan_mods` | Find untracked mods in GTA V directory |
 | `list_profiles` | List saved profiles |
 | `switch_profile` | Switch to a profile by name |
+| `emergency_restore` | Copy all mod files from storage back to GTA V directory |
 
 ## Architecture
 
