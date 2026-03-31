@@ -51,7 +51,7 @@ namespace GtavModManager.Views
             }
 
             var results = vm.RunScan();
-            if (results == null || results.Count == 0)
+            if (results == null || results.Mods.Count == 0)
             {
                 MessageBox.Show("No mods found in the GTA V directory.", "Scan", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
