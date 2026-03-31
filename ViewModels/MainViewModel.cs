@@ -104,6 +104,7 @@ namespace GtavModManager.ViewModels
 
             // Wire up events
             ModList.ModsChanged += OnModsChanged;
+            SettingsVm.EmergencyRestoreRequested += DoEmergencyRestore;
             ConflictReport.ConflictCountChanged += count => ConflictBadgeCount = count;
 
             // Wire selection: when a row is selected, update detail panel
@@ -140,6 +141,33 @@ namespace GtavModManager.ViewModels
             KeybindManager.Reload();
             Home.Refresh();
             UpdateStatusMessage();
+        }
+
+        private void DoEmergencyRestore()
+        {
+            var confirm = System.Windows.MessageBox.Show(
+                "This will copy all mod files from storage back to their GTA V locations and mark all mods as enabled.\n\n" +
+                "Use this if the game won't launch or mods are missing after a crash.\n\n" +
+                "Continue?",
+                "Emergency Restore",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+            var result = Quarantine.RestoreAll(Inventory.GetAllMods());
+            Inventory.Save();
+            ModList.Reload();
+            Home.Refresh();
+            UpdateStatusMessage();
+
+            System.Windows.MessageBox.Show(
+                result.Success
+                    ? "All mod files restored to GTA V directory."
+                    : $"Restore completed with errors:\n\n{result.ErrorMessage}",
+                "Emergency Restore",
+                System.Windows.MessageBoxButton.OK,
+                result.Success ? System.Windows.MessageBoxImage.Information : System.Windows.MessageBoxImage.Warning);
         }
 
         private void UpdateStatusMessage()

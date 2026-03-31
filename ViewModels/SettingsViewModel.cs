@@ -45,6 +45,9 @@ namespace GtavModManager.ViewModels
         public RelayCommand BrowseQuarantineCommand { get; }
         public RelayCommand AutoDetectCommand { get; }
         public RelayCommand SaveCommand { get; }
+        public RelayCommand EmergencyRestoreCommand { get; }
+
+        public event Action EmergencyRestoreRequested;
 
         public SettingsViewModel(SettingsRepository repo, AppSettings settings, GtavRootDetectorService detector)
         {
@@ -60,6 +63,7 @@ namespace GtavModManager.ViewModels
             BrowseQuarantineCommand = new RelayCommand(BrowseQuarantine);
             AutoDetectCommand = new RelayCommand(AutoDetect);
             SaveCommand = new RelayCommand(Save, () => IsGtavRootValid);
+            EmergencyRestoreCommand = new RelayCommand(() => EmergencyRestoreRequested?.Invoke());
         }
 
         private void AutoDetect()

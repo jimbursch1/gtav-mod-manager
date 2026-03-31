@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using GtavModManager.Core;
@@ -21,6 +22,16 @@ namespace GtavModManager.Services
     /// </summary>
     public class QuarantineService
     {
+        // Files that must never be moved to storage under any circumstances.
+        // This is a last-resort guard; the scanner also skips these.
+        private static readonly HashSet<string> ProtectedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "GTA5.exe", "GTAVLauncher.exe", "PlayGTAV.exe",
+            "update.rpf", "x64a.rpf", "x64b.rpf",
+            "dsound.dll", "d3d11.dll", "dxgi.dll",
+            "OpenIV.asi", "GtavModManager.exe",
+        };
+
         private readonly FileOperationService _fileOps;
         private readonly SymlinkService _symlink;
         private string _gtavRoot;
@@ -67,6 +78,17 @@ namespace GtavModManager.Services
             if (string.IsNullOrEmpty(_gtavRoot))
                 return OperationResult.Fail("GTA V root path not configured.");
 
+            if (IsGtavRunning())
+                return OperationResult.Fail("GTA V is running. Close the game before importing mods.");
+
+            // Refuse to move protected files regardless of how they ended up in the mod record
+            foreach (var relativePath in mod.Files)
+            {
+                string filename = Path.GetFileName(relativePath);
+                if (ProtectedFileNames.Contains(filename) || KnownFrameworks.All.ContainsKey(filename))
+                    return OperationResult.Fail($"Refusing to import protected file: {filename}. Remove it from the mod's file list.");
+            }
+
             string storagePath = GetStoragePath(mod);
 
             // Move each file from GTA V root into storage
@@ -99,6 +121,9 @@ namespace GtavModManager.Services
             if (string.IsNullOrEmpty(_gtavRoot))
                 return OperationResult.Fail("GTA V root path not configured.");
 
+            if (IsGtavRunning())
+                return OperationResult.Fail("GTA V is running. Close the game before changing mods.");
+
             var result = CreateLinks(mod);
             if (result.Success)
                 mod.Status = ModStatus.Enabled;
@@ -113,6 +138,9 @@ namespace GtavModManager.Services
         {
             if (string.IsNullOrEmpty(_gtavRoot))
                 return OperationResult.Fail("GTA V root path not configured.");
+
+            if (IsGtavRunning())
+                return OperationResult.Fail("GTA V is running. Close the game before changing mods.");
 
             var result = RemoveLinks(mod);
             if (result.Success)
@@ -195,6 +223,52 @@ namespace GtavModManager.Services
             }
             return OperationResult.Fail(reason);
         }
+
+        /// <summary>
+        /// Emergency recovery: copies all mod files from storage back to their GTA V paths.
+        /// Does not delete from storage. Sets all mods to Enabled.
+        /// Use this to recover from any broken link/state situation.
+        /// </summary>
+        public OperationResult RestoreAll(IReadOnlyList<Mod> allMods)
+        {
+            if (string.IsNullOrEmpty(_gtavRoot))
+                return OperationResult.Fail("GTA V root path not configured.");
+
+            if (IsGtavRunning())
+                return OperationResult.Fail("GTA V is running. Close the game before restoring.");
+
+            var errors = new List<string>();
+            foreach (var mod in allMods)
+            {
+                string storagePath = GetStoragePath(mod);
+                foreach (var relativePath in mod.Files)
+                {
+                    string storageFile = Path.Combine(storagePath, relativePath);
+                    string gtavFile = Path.Combine(_gtavRoot, relativePath);
+
+                    if (!File.Exists(storageFile)) continue;
+                    if (File.Exists(gtavFile)) { mod.Status = ModStatus.Enabled; continue; }
+
+                    try
+                    {
+                        _fileOps.EnsureDirectory(Path.GetDirectoryName(gtavFile));
+                        File.Copy(storageFile, gtavFile, overwrite: false);
+                        mod.Status = ModStatus.Enabled;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"{relativePath}: {ex.Message}");
+                    }
+                }
+            }
+
+            return errors.Count == 0
+                ? OperationResult.Ok()
+                : OperationResult.Fail("Some files could not be restored:\n" + string.Join("\n", errors));
+        }
+
+        private static bool IsGtavRunning() =>
+            Process.GetProcessesByName("GTA5").Length > 0;
 
         /// <summary>
         /// Heuristic check: are gtavFile and storageFile the same underlying data?

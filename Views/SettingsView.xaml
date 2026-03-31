@@ -54,6 +54,20 @@
                     Command="{Binding SaveCommand}"
                     HorizontalAlignment="Left" />
 
+            <!-- Emergency Restore -->
+            <Separator Margin="0,24,0,16" />
+            <TextBlock Text="Emergency Restore" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,6" />
+            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12" Margin="0,0,0,12">
+                If the game won't launch or mods are missing, use this to copy all mod files
+                from storage back to the GTA V directory. Safe to run at any time — files in
+                storage are never deleted.
+            </TextBlock>
+            <Button Style="{StaticResource ButtonStyle}" Content="Restore All Mod Files"
+                    Command="{Binding EmergencyRestoreCommand}"
+                    HorizontalAlignment="Left" />
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
