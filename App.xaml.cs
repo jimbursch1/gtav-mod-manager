@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using GtavModManager.Cli;
 
 namespace GtavModManager
 {
@@ -9,7 +10,15 @@ namespace GtavModManager
         {
             base.OnStartup(e);
 
-            // Global unhandled exception handler — log and show dialog rather than silent crash
+            // If any arguments are passed, run as CLI and exit — no GUI
+            if (e.Args.Length > 0)
+            {
+                int exitCode = CliHandler.Run(e.Args);
+                Shutdown(exitCode);
+                return;
+            }
+
+            // GUI mode — wire up error handlers and show main window
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {
                 string msg = args.ExceptionObject?.ToString() ?? "Unknown error";
@@ -27,6 +36,8 @@ namespace GtavModManager
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 args.Handled = true;
             };
+
+            new MainWindow().Show();
         }
     }
 }

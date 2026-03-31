@@ -60,6 +60,23 @@ All app data lives in `%AppData%\GtavModManager\`:
 
 Mod files are stored in `<GTA V Root>\ModManager\storage\` by default (configurable in Settings).
 
+## CLI Usage
+
+The same exe works as a command-line tool. If launched with arguments, no GUI opens — it runs the command, prints output, and exits.
+
+```
+GtavModManager.exe list
+GtavModManager.exe enable <name>
+GtavModManager.exe disable <name>
+GtavModManager.exe status
+GtavModManager.exe scan
+GtavModManager.exe profile list
+GtavModManager.exe profile switch <name>
+GtavModManager.exe help
+```
+
+All commands accept `--json` for machine-readable output. Name matching is case-insensitive and partial (`enable speedometer` works). Exit code 0 = success, 1 = error.
+
 ## Architecture
 
 ```

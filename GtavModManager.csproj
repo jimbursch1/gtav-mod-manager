@@ -146,6 +146,9 @@
     <Compile Include="ViewModels\ScanResultsViewModel.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />
 
+    <!-- CLI -->
+    <Compile Include="Cli\CliHandler.cs" />
+
     <!-- Converters -->
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Converters\ModStatusToColorConverter.cs" />
