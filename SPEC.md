@@ -135,7 +135,7 @@ Each profile stores:
 - Load order for that profile
 - Active keybind overrides
 
-Switching profiles triggers a quarantine swap — disabled mods are moved out, enabled mods are moved in.
+Switching profiles triggers a quarantine swap — disabled mods are moved out, enabled mods are moved in. Use folder junctions/symlinks (not file copies) for performance — same approach as GTAModsManager.
 
 ---
 
