@@ -77,6 +77,52 @@ GtavModManager.exe help
 
 All commands accept `--json` for machine-readable output. Name matching is case-insensitive and partial (`enable speedometer` works). Exit code 0 = success, 1 = error.
 
+## MCP Server (AI Integration)
+
+An MCP server in `mcp/` exposes the CLI commands as tools so Claude (or any MCP client) can manage mods directly.
+
+### Setup
+
+```cmd
+cd mcp
+npm install
+```
+
+### Configure Claude Desktop
+
+Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "gtav-mod-manager": {
+      "command": "node",
+      "args": ["C:\\path\\to\\gtav-mod-manager\\mcp\\server.js"],
+      "env": {
+        "GTAV_MOD_MANAGER_EXE": "C:\\path\\to\\gtav-mod-manager\\bin\\Release\\GtavModManager.exe"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. You can then say things like:
+- *"What mods do I have enabled?"*
+- *"Disable all mods and switch to my Freeplay profile"*
+- *"Scan my GTA V folder for untracked mods"*
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_status` | Mod counts and GTA V root status |
+| `list_mods` | All mods with name, type, status |
+| `enable_mod` | Enable a mod (partial name match) |
+| `disable_mod` | Disable a mod (partial name match) |
+| `scan_mods` | Find untracked mods in GTA V directory |
+| `list_profiles` | List saved profiles |
+| `switch_profile` | Switch to a profile by name |
+
 ## Architecture
 
 ```
