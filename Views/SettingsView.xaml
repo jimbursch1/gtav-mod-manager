@@ -49,6 +49,17 @@
             <TextBlock Text="Leave blank to use &lt;GTA V Root&gt;\ModManager\storage — files live here permanently; links are created in GTA V root when enabled"
                        Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,20" />
 
+            <!-- DIY Stream Deck path -->
+            <TextBlock Style="{StaticResource LabelStyle}" Text="DIY Stream Deck Folder (optional)" />
+            <DockPanel Margin="0,0,0,4">
+                <Button Style="{StaticResource ButtonStyle}" Content="Browse" DockPanel.Dock="Right"
+                        Command="{Binding BrowseStreamDeckCommand}" Margin="8,0,0,0" />
+                <TextBox Style="{StaticResource TextBoxStyle}"
+                         Text="{Binding StreamDeckPath, UpdateSourceTrigger=PropertyChanged}" />
+            </DockPanel>
+            <TextBlock Text="Folder containing server.js — enables the Stream Deck launch button on the Home tab"
+                       Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,20" />
+
             <!-- Save -->
             <Button Style="{StaticResource AccentButtonStyle}" Content="Save Settings"
                     Command="{Binding SaveCommand}"

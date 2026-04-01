@@ -16,6 +16,9 @@ namespace GtavModManager.Core
         [JsonProperty("activeProfileId")]
         public string ActiveProfileId { get; set; }
 
+        [JsonProperty("streamDeckPath")]
+        public string StreamDeckPath { get; set; }
+
         [JsonProperty("schemaVersion")]
         public string SchemaVersion { get; set; } = "1.0";
     }

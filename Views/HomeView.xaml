@@ -190,7 +190,7 @@
                 <!-- Launch via Steam -->
                 <Border Background="{StaticResource SurfaceBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="4" Padding="20,16"
+                        CornerRadius="4" Padding="20,16" Margin="0,0,12,0"
                         MinWidth="180">
                     <StackPanel>
                         <TextBlock Text="Steam" FontWeight="SemiBold"
@@ -202,6 +202,38 @@
                                 Content="Launch"
                                 Command="{Binding LaunchSteamCommand}"
                                 HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- DIY Stream Deck -->
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Padding="20,16"
+                        MinWidth="180">
+                    <StackPanel>
+                        <TextBlock Text="Stream Deck" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                        <TextBlock Text="Start tablet control panel server"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Button Style="{StaticResource ButtonStyle}"
+                                Content="Launch"
+                                Command="{Binding LaunchStreamDeckCommand}"
+                                HorizontalAlignment="Left" />
+                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}" FontSize="10"
+                                   Margin="0,6,0,0" FontStyle="Italic">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="server.js found" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding StreamDeckAvailable}" Value="False">
+                                            <Setter Property="Text" Value="Not configured — set path in Settings" />
+                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                 </Border>
 

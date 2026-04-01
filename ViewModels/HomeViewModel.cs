@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using GtavModManager.Core;
 using GtavModManager.Services;
 
@@ -17,6 +19,7 @@ namespace GtavModManager.ViewModels
         private string _launchError;
         private bool _rphAvailable;
         private bool _gtaAvailable;
+        private bool _streamDeckAvailable;
 
         public int EnabledCount
         {
@@ -60,11 +63,18 @@ namespace GtavModManager.ViewModels
             private set => SetProperty(ref _gtaAvailable, value);
         }
 
+        public bool StreamDeckAvailable
+        {
+            get => _streamDeckAvailable;
+            private set => SetProperty(ref _streamDeckAvailable, value);
+        }
+
         public bool GtavRootConfigured => !string.IsNullOrEmpty(_settings.GtavRootPath);
 
         public RelayCommand LaunchRphCommand { get; }
         public RelayCommand LaunchDirectCommand { get; }
         public RelayCommand LaunchSteamCommand { get; }
+        public RelayCommand LaunchStreamDeckCommand { get; }
 
         public HomeViewModel(
             ModInventoryService inventory,
@@ -82,6 +92,7 @@ namespace GtavModManager.ViewModels
             LaunchDirectCommand = new RelayCommand(() => Launch(LaunchMethod.Direct),
                 () => GtaAvailable);
             LaunchSteamCommand = new RelayCommand(() => Launch(LaunchMethod.Steam));
+            LaunchStreamDeckCommand = new RelayCommand(LaunchStreamDeck, () => StreamDeckAvailable);
 
             Refresh();
         }
@@ -97,9 +108,12 @@ namespace GtavModManager.ViewModels
 
             RphAvailable = _launcher.CanLaunch(LaunchMethod.RagePluginHook);
             GtaAvailable = _launcher.CanLaunch(LaunchMethod.Direct);
+            StreamDeckAvailable = !string.IsNullOrEmpty(_settings.StreamDeckPath)
+                && File.Exists(Path.Combine(_settings.StreamDeckPath, "server.js"));
 
             LaunchRphCommand.RaiseCanExecuteChanged();
             LaunchDirectCommand.RaiseCanExecuteChanged();
+            LaunchStreamDeckCommand.RaiseCanExecuteChanged();
 
             OnPropertyChanged(nameof(GtavRootConfigured));
         }
@@ -115,6 +129,25 @@ namespace GtavModManager.ViewModels
             var result = _launcher.Launch(method);
             if (!result.Success)
                 LaunchError = result.ErrorMessage;
+        }
+
+        private void LaunchStreamDeck()
+        {
+            LaunchError = null;
+            try
+            {
+                var psi = new ProcessStartInfo("cmd.exe")
+                {
+                    Arguments = $"/k node server.js",
+                    WorkingDirectory = _settings.StreamDeckPath,
+                    UseShellExecute = true,
+                };
+                Process.Start(psi);
+            }
+            catch (System.Exception ex)
+            {
+                LaunchError = $"Failed to launch Stream Deck: {ex.Message}";
+            }
         }
     }
 }
