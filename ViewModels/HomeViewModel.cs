@@ -196,6 +196,14 @@ namespace GtavModManager.ViewModels
             LaunchError = null;
             try
             {
+                var kill = new ProcessStartInfo("cmd.exe")
+                {
+                    Arguments = "/c for /f \"tokens=2\" %a in ('wmic process where \"CommandLine like '%%director-agent%%'\" get ProcessId /value ^| find \"=\"') do taskkill /F /PID %a",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using (var p = Process.Start(kill)) p?.WaitForExit(3000);
+
                 var psi = new ProcessStartInfo("cmd.exe")
                 {
                     Arguments = "/k node director-agent.js",
