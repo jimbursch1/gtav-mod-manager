@@ -18,6 +18,7 @@ namespace GtavModManager.ViewModels
         private string _gtavRootPath;
         private string _quarantineFolder;
         private string _streamDeckPath;
+        private string _directorPath;
         private bool _isGtavRootValid;
 
         public string GtavRootPath
@@ -43,6 +44,12 @@ namespace GtavModManager.ViewModels
             set => SetProperty(ref _streamDeckPath, value);
         }
 
+        public string DirectorPath
+        {
+            get => _directorPath;
+            set => SetProperty(ref _directorPath, value);
+        }
+
         public bool IsGtavRootValid
         {
             get => _isGtavRootValid;
@@ -52,6 +59,7 @@ namespace GtavModManager.ViewModels
         public RelayCommand BrowseGtavRootCommand { get; }
         public RelayCommand BrowseQuarantineCommand { get; }
         public RelayCommand BrowseStreamDeckCommand { get; }
+        public RelayCommand BrowseDirectorCommand { get; }
         public RelayCommand AutoDetectCommand { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand EmergencyRestoreCommand { get; }
@@ -67,11 +75,13 @@ namespace GtavModManager.ViewModels
             _gtavRootPath = settings.GtavRootPath ?? "";
             _quarantineFolder = settings.QuarantineFolder ?? "";
             _streamDeckPath = settings.StreamDeckPath ?? "";
+            _directorPath = settings.DirectorPath ?? "";
             _isGtavRootValid = ValidatePath(_gtavRootPath);
 
             BrowseGtavRootCommand = new RelayCommand(BrowseGtavRoot);
             BrowseQuarantineCommand = new RelayCommand(BrowseQuarantine);
             BrowseStreamDeckCommand = new RelayCommand(BrowseStreamDeck);
+            BrowseDirectorCommand = new RelayCommand(BrowseDirector);
             AutoDetectCommand = new RelayCommand(AutoDetect);
             SaveCommand = new RelayCommand(Save, () => IsGtavRootValid);
             EmergencyRestoreCommand = new RelayCommand(() => EmergencyRestoreRequested?.Invoke());
@@ -134,6 +144,17 @@ namespace GtavModManager.ViewModels
             }
         }
 
+        private void BrowseDirector()
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select Director Agent Folder (containing director-agent.js)";
+                dialog.SelectedPath = _directorPath;
+                if (dialog.ShowDialog() == DialogResult.OK)
+                    DirectorPath = dialog.SelectedPath;
+            }
+        }
+
         private void Save()
         {
             _settings.GtavRootPath = _gtavRootPath;
@@ -141,6 +162,7 @@ namespace GtavModManager.ViewModels
                 ? Path.Combine(_gtavRootPath, "ModManager", "storage")
                 : _quarantineFolder;
             _settings.StreamDeckPath = _streamDeckPath;
+            _settings.DirectorPath = _directorPath;
             _repo.Save(_settings);
         }
 
