@@ -20,6 +20,7 @@ namespace GtavModManager.ViewModels
         private bool _rphAvailable;
         private bool _gtaAvailable;
         private bool _streamDeckAvailable;
+        private bool _directorAvailable;
 
         public int EnabledCount
         {
@@ -69,12 +70,19 @@ namespace GtavModManager.ViewModels
             private set => SetProperty(ref _streamDeckAvailable, value);
         }
 
+        public bool DirectorAvailable
+        {
+            get => _directorAvailable;
+            private set => SetProperty(ref _directorAvailable, value);
+        }
+
         public bool GtavRootConfigured => !string.IsNullOrEmpty(_settings.GtavRootPath);
 
         public RelayCommand LaunchRphCommand { get; }
         public RelayCommand LaunchDirectCommand { get; }
         public RelayCommand LaunchSteamCommand { get; }
         public RelayCommand LaunchStreamDeckCommand { get; }
+        public RelayCommand LaunchDirectorCommand { get; }
 
         public HomeViewModel(
             ModInventoryService inventory,
@@ -93,6 +101,7 @@ namespace GtavModManager.ViewModels
                 () => GtaAvailable);
             LaunchSteamCommand = new RelayCommand(() => Launch(LaunchMethod.Steam));
             LaunchStreamDeckCommand = new RelayCommand(LaunchStreamDeck, () => StreamDeckAvailable);
+            LaunchDirectorCommand = new RelayCommand(LaunchDirector, () => DirectorAvailable);
 
             Refresh();
         }
@@ -111,9 +120,13 @@ namespace GtavModManager.ViewModels
             StreamDeckAvailable = !string.IsNullOrEmpty(_settings.StreamDeckPath)
                 && File.Exists(Path.Combine(_settings.StreamDeckPath, "server.js"));
 
+            DirectorAvailable = !string.IsNullOrEmpty(_settings.DirectorPath)
+                && File.Exists(Path.Combine(_settings.DirectorPath, "director-agent.js"));
+
             LaunchRphCommand.RaiseCanExecuteChanged();
             LaunchDirectCommand.RaiseCanExecuteChanged();
             LaunchStreamDeckCommand.RaiseCanExecuteChanged();
+            LaunchDirectorCommand.RaiseCanExecuteChanged();
 
             OnPropertyChanged(nameof(GtavRootConfigured));
         }
@@ -147,6 +160,25 @@ namespace GtavModManager.ViewModels
             catch (System.Exception ex)
             {
                 LaunchError = $"Failed to launch Stream Deck: {ex.Message}";
+            }
+        }
+
+        private void LaunchDirector()
+        {
+            LaunchError = null;
+            try
+            {
+                var psi = new ProcessStartInfo("cmd.exe")
+                {
+                    Arguments = "/k node director-agent.js",
+                    WorkingDirectory = _settings.DirectorPath,
+                    UseShellExecute = true,
+                };
+                Process.Start(psi);
+            }
+            catch (System.Exception ex)
+            {
+                LaunchError = $"Failed to launch Director: {ex.Message}";
             }
         }
     }
