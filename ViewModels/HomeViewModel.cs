@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
 using GtavModManager.Core;
 using GtavModManager.Services;
 
@@ -20,6 +22,7 @@ namespace GtavModManager.ViewModels
         private bool _rphAvailable;
         private bool _gtaAvailable;
         private bool _streamDeckAvailable;
+        private bool _streamDeckRunning;
 
         public int EnabledCount
         {
@@ -69,6 +72,18 @@ namespace GtavModManager.ViewModels
             private set => SetProperty(ref _streamDeckAvailable, value);
         }
 
+        public bool StreamDeckRunning
+        {
+            get => _streamDeckRunning;
+            private set
+            {
+                SetProperty(ref _streamDeckRunning, value);
+                OnPropertyChanged(nameof(StreamDeckButtonLabel));
+            }
+        }
+
+        public string StreamDeckButtonLabel => _streamDeckRunning ? "Relaunch" : "Launch";
+
         public bool GtavRootConfigured => !string.IsNullOrEmpty(_settings.GtavRootPath);
 
         public RelayCommand LaunchRphCommand { get; }
@@ -110,6 +125,8 @@ namespace GtavModManager.ViewModels
             GtaAvailable = _launcher.CanLaunch(LaunchMethod.Direct);
             StreamDeckAvailable = !string.IsNullOrEmpty(_settings.StreamDeckPath)
                 && File.Exists(Path.Combine(_settings.StreamDeckPath, "server.js"));
+            StreamDeckRunning = IPGlobalProperties.GetIPGlobalProperties()
+                .GetActiveTcpListeners().Any(ep => ep.Port == 3000);
 
             LaunchRphCommand.RaiseCanExecuteChanged();
             LaunchDirectCommand.RaiseCanExecuteChanged();
@@ -136,6 +153,15 @@ namespace GtavModManager.ViewModels
             LaunchError = null;
             try
             {
+                // Kill any existing server.js process on port 3000 before starting
+                var kill = new ProcessStartInfo("cmd.exe")
+                {
+                    Arguments = "/c for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') do taskkill /F /PID %a",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using (var p = Process.Start(kill)) p?.WaitForExit(3000);
+
                 var psi = new ProcessStartInfo("cmd.exe")
                 {
                     Arguments = $"/k node server.js",
@@ -143,6 +169,7 @@ namespace GtavModManager.ViewModels
                     UseShellExecute = true,
                 };
                 Process.Start(psi);
+                StreamDeckRunning = true;
             }
             catch (System.Exception ex)
             {
