@@ -24,6 +24,8 @@ namespace GtavModManager.ViewModels
         private bool _streamDeckAvailable;
         private bool _streamDeckRunning;
         private bool _directorAvailable;
+        private bool _directorRunning;
+        private Process _directorProcess;
 
         public int EnabledCount
         {
@@ -91,6 +93,17 @@ namespace GtavModManager.ViewModels
             private set => SetProperty(ref _directorAvailable, value);
         }
 
+        public bool DirectorRunning
+        {
+            get => _directorRunning;
+            private set
+            {
+                SetProperty(ref _directorRunning, value);
+                OnPropertyChanged(nameof(DirectorButtonLabel));
+            }
+        }
+
+        public string DirectorButtonLabel => _directorRunning ? "Relaunch" : "Launch";
 
         public bool GtavRootConfigured => !string.IsNullOrEmpty(_settings.GtavRootPath);
 
@@ -140,6 +153,7 @@ namespace GtavModManager.ViewModels
 
             DirectorAvailable = !string.IsNullOrEmpty(_settings.DirectorPath)
                 && File.Exists(Path.Combine(_settings.DirectorPath, "director-agent.js"));
+            DirectorRunning = _directorProcess != null && !_directorProcess.HasExited;
 
             LaunchRphCommand.RaiseCanExecuteChanged();
             LaunchDirectCommand.RaiseCanExecuteChanged();
@@ -210,7 +224,8 @@ namespace GtavModManager.ViewModels
                     WorkingDirectory = _settings.DirectorPath,
                     UseShellExecute = true,
                 };
-                Process.Start(psi);
+                _directorProcess = Process.Start(psi);
+                DirectorRunning = true;
             }
             catch (System.Exception ex)
             {
