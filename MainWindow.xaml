@@ -82,6 +82,11 @@
                 <views:ProfileManagerView DataContext="{Binding ProfileManager}" />
             </TabItem>
 
+            <!-- Game Version Snapshots tab -->
+            <TabItem Style="{StaticResource TabItemStyle}" Header="Snapshots">
+                <views:GameVersionSnapshotView DataContext="{Binding SnapshotManager}" />
+            </TabItem>
+
             <!-- Settings tab -->
             <TabItem Style="{StaticResource TabItemStyle}" Header="Settings">
                 <views:SettingsView DataContext="{Binding SettingsVm}" />

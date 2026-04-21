@@ -62,13 +62,14 @@ namespace GtavModManager.Cli
 
             switch (cmd)
             {
-                case "list":    return CmdList(json);
-                case "status":  return CmdStatus(json);
-                case "enable":  return CmdEnable(Tail(args), json);
-                case "disable": return CmdDisable(Tail(args), json);
-                case "scan":    return CmdScan(json);
-                case "profile": return CmdProfile(Tail(args), json);
-                case "restore": return CmdRestore();
+                case "list":     return CmdList(json);
+                case "status":   return CmdStatus(json);
+                case "enable":   return CmdEnable(Tail(args), json);
+                case "disable":  return CmdDisable(Tail(args), json);
+                case "scan":     return CmdScan(json);
+                case "profile":  return CmdProfile(Tail(args), json);
+                case "restore":  return CmdRestore();
+                case "snapshot": return CmdSnapshot(Tail(args), json);
                 default:
                     Console.Error.WriteLine($"error: unknown command '{args[0]}'. Run with 'help' for usage.");
                     return 1;
@@ -303,7 +304,127 @@ namespace GtavModManager.Cli
             return 0;
         }
 
+        private static int CmdSnapshot(string[] args, bool json)
+        {
+            if (args.Length == 0)
+            {
+                Console.Error.WriteLine("usage: snapshot <list|create|restore|delete> [args]");
+                return 1;
+            }
+
+            string sub = args[0].ToLowerInvariant();
+            var (_, _, settings) = LoadServices();
+            var snapshotSvc = LoadSnapshotService(settings);
+
+            switch (sub)
+            {
+                case "list":
+                {
+                    var snapshots = snapshotSvc.GetAllSnapshots();
+                    if (json)
+                    {
+                        Console.WriteLine(JsonConvert.SerializeObject(snapshots.Select(s => new
+                        {
+                            id = s.Id,
+                            label = s.Label,
+                            game_version = s.GameVersion,
+                            created_at = s.CreatedAt,
+                            size = s.TotalSizeDisplay,
+                            files = s.Files.Count
+                        }), Formatting.Indented));
+                        return 0;
+                    }
+                    if (!snapshots.Any()) { Console.WriteLine("No snapshots saved."); return 0; }
+                    int labelW = Math.Max(5, snapshots.Max(s => s.Label.Length));
+                    int verW   = Math.Max(12, snapshots.Max(s => s.GameVersion.Length));
+                    Console.WriteLine($"{"LABEL".PadRight(labelW)}  {"GAME VERSION".PadRight(verW)}  DATE                 SIZE");
+                    Console.WriteLine(new string('-', labelW + verW + 30));
+                    foreach (var s in snapshots)
+                        Console.WriteLine($"{s.Label.PadRight(labelW)}  {s.GameVersion.PadRight(verW)}  {s.CreatedAt:yyyy-MM-dd HH:mm}  {s.TotalSizeDisplay}");
+                    return 0;
+                }
+
+                case "create":
+                {
+                    string label = args.Length > 1
+                        ? string.Join(" ", args.Skip(1).Where(a => a != "--json"))
+                        : "";
+                    var result = snapshotSvc.CreateSnapshot(label);
+                    if (!result.Success) { Console.Error.WriteLine($"error: {result.ErrorMessage}"); return 1; }
+                    snapshotSvc.Save();
+                    Console.WriteLine("Snapshot saved.");
+                    return 0;
+                }
+
+                case "restore":
+                {
+                    if (args.Length < 2) { Console.Error.WriteLine("usage: snapshot restore <label|id>"); return 1; }
+                    string query = string.Join(" ", args.Skip(1).Where(a => a != "--json"));
+                    var snapshot = FindSnapshot(snapshotSvc, query);
+                    if (snapshot == null) { Console.Error.WriteLine($"error: no snapshot matching '{query}'"); return 1; }
+                    var result = snapshotSvc.RestoreSnapshot(snapshot.Id);
+                    if (!result.Success) { Console.Error.WriteLine($"error: {result.ErrorMessage}"); return 1; }
+                    Console.WriteLine($"Restored snapshot: {snapshot.Label}");
+                    return 0;
+                }
+
+                case "delete":
+                {
+                    if (args.Length < 2) { Console.Error.WriteLine("usage: snapshot delete <label|id>"); return 1; }
+                    string query = string.Join(" ", args.Skip(1).Where(a => a != "--json"));
+                    var snapshot = FindSnapshot(snapshotSvc, query);
+                    if (snapshot == null) { Console.Error.WriteLine($"error: no snapshot matching '{query}'"); return 1; }
+                    var result = snapshotSvc.DeleteSnapshot(snapshot.Id);
+                    if (!result.Success) { Console.Error.WriteLine($"error: {result.ErrorMessage}"); return 1; }
+                    snapshotSvc.Save();
+                    Console.WriteLine($"Deleted snapshot: {snapshot.Label}");
+                    return 0;
+                }
+
+                default:
+                    Console.Error.WriteLine($"error: unknown snapshot subcommand '{sub}'");
+                    return 1;
+            }
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
+
+        private static GtavModManager.Services.GameVersionSnapshotService LoadSnapshotService(AppSettings settings)
+        {
+            string invFolder = !string.IsNullOrEmpty(settings.InventoryFolder)
+                ? settings.InventoryFolder
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GtavModManager");
+            var repo = new GtavModManager.Data.SnapshotRepository(invFolder);
+            string storageRoot = !string.IsNullOrEmpty(settings.GtavRootPath)
+                ? Path.Combine(settings.GtavRootPath, "ModManager", "snapshots")
+                : Path.Combine(invFolder, "snapshots");
+            var svc = new GtavModManager.Services.GameVersionSnapshotService(repo);
+            svc.Configure(settings.GtavRootPath ?? "", storageRoot);
+            svc.Load();
+            return svc;
+        }
+
+        private static GtavModManager.Core.GameVersionSnapshot FindSnapshot(
+            GtavModManager.Services.GameVersionSnapshotService svc, string query)
+        {
+            var all = svc.GetAllSnapshots();
+            var exact = all.FirstOrDefault(s =>
+                s.Id.Equals(query, StringComparison.OrdinalIgnoreCase) ||
+                s.Label.Equals(query, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+
+            var partial = all.Where(s =>
+                s.Label.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            if (partial.Count == 1) return partial[0];
+            if (partial.Count > 1)
+            {
+                Console.Error.WriteLine($"error: '{query}' matches multiple snapshots:");
+                foreach (var s in partial)
+                    Console.Error.WriteLine($"  {s.Label} ({s.CreatedAt:yyyy-MM-dd})");
+                Console.Error.WriteLine("Use a more specific label or the snapshot ID.");
+            }
+            return null;
+        }
 
         private static (ModInventoryService inventory, QuarantineService quarantine, AppSettings settings) LoadServices()
         {
@@ -379,15 +500,19 @@ namespace GtavModManager.Cli
             Console.WriteLine("Usage: GtavModManager.exe <command> [options]");
             Console.WriteLine();
             Console.WriteLine("Commands:");
-            Console.WriteLine("  list                  List all mods and their status");
-            Console.WriteLine("  enable <name>         Enable a mod (partial name match)");
-            Console.WriteLine("  disable <name>        Disable a mod (partial name match)");
-            Console.WriteLine("  status                Show summary (mod counts, GTA V root)");
-            Console.WriteLine("  scan                  Scan GTA V directory for unimported mods");
-            Console.WriteLine("  profile list          List saved profiles");
-            Console.WriteLine("  profile switch <name> Switch to a profile");
-            Console.WriteLine("  restore               Copy all mod files from storage back to GTA V directory");
-            Console.WriteLine("  help                  Show this message");
+            Console.WriteLine("  list                       List all mods and their status");
+            Console.WriteLine("  enable <name>              Enable a mod (partial name match)");
+            Console.WriteLine("  disable <name>             Disable a mod (partial name match)");
+            Console.WriteLine("  status                     Show summary (mod counts, GTA V root)");
+            Console.WriteLine("  scan                       Scan GTA V directory for unimported mods");
+            Console.WriteLine("  profile list               List saved profiles");
+            Console.WriteLine("  profile switch <name>      Switch to a profile");
+            Console.WriteLine("  restore                    Copy all mod files from storage back to GTA V directory");
+            Console.WriteLine("  snapshot list              List saved game version snapshots");
+            Console.WriteLine("  snapshot create [label]    Save a snapshot of GTA V core files");
+            Console.WriteLine("  snapshot restore <label>   Restore GTA V core files from a snapshot");
+            Console.WriteLine("  snapshot delete <label>    Delete a saved snapshot");
+            Console.WriteLine("  help                       Show this message");
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("  --json                Output as JSON (all commands)");

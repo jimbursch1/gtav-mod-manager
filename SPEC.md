@@ -139,6 +139,38 @@ Switching profiles triggers a quarantine swap — disabled mods are moved out, e
 
 ---
 
+### 8. Game Version Snapshots
+
+When Rockstar pushes a GTA V update through Steam, ScriptHookV and RagePluginHook break until their authors release compatibility updates (typically a few days). This feature lets you save copies of the core game files beforehand so you can roll back immediately.
+
+**Files captured in each snapshot:**
+- `GTA5.exe` (required)
+- `update\update.rpf` (required)
+- `GTAVLauncher.exe` (if present)
+- `PlayGTAV.exe` (if present)
+- `GTAVLanguageSelect.exe` (if present)
+- `ScriptHookV.dll` (if present)
+- `dinput8.dll` — ScriptHookV ASI loader (if present)
+
+**Workflow:**
+1. Before allowing Steam to update, click **+ Save Snapshot** and give it a label (e.g., "v1.68 pre-update")
+2. After the update breaks mods, click **Restore** next to that snapshot
+3. Core files are copied back to the GTA V root — game runs on the old executable again
+
+**Storage:** Snapshot files live at `{GTA V Root}\ModManager\snapshots\{id}\`. Metadata (label, game version, file list, size) is stored in `%AppData%\GtavModManager\snapshots.json`.
+
+**Game version** is extracted automatically from `GTA5.exe` file properties and displayed in the snapshot list.
+
+**CLI:**
+```
+GtavModManager.exe snapshot list
+GtavModManager.exe snapshot create "v1.68 pre-update"
+GtavModManager.exe snapshot restore "v1.68"
+GtavModManager.exe snapshot delete "v1.68"
+```
+
+---
+
 ## Out of Scope (v1)
 - Automatic mod downloading
 - Visual keyboard map

@@ -90,6 +90,8 @@
     <Compile Include="Views\ConflictReportView.xaml.cs"><DependentUpon>ConflictReportView.xaml</DependentUpon></Compile>
     <Page Include="Views\ProfileManagerView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Compile Include="Views\ProfileManagerView.xaml.cs"><DependentUpon>ProfileManagerView.xaml</DependentUpon></Compile>
+    <Page Include="Views\GameVersionSnapshotView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
+    <Compile Include="Views\GameVersionSnapshotView.xaml.cs"><DependentUpon>GameVersionSnapshotView.xaml</DependentUpon></Compile>
     <Page Include="Views\SettingsView.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
     <Compile Include="Views\SettingsView.xaml.cs"><DependentUpon>SettingsView.xaml</DependentUpon></Compile>
     <Page Include="Views\AddModDialog.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
@@ -113,12 +115,14 @@
     <Compile Include="Core\AppSettings.cs" />
     <Compile Include="Core\ScanResult.cs" />
     <Compile Include="Core\KnownFramework.cs" />
+    <Compile Include="Core\GameVersionSnapshot.cs" />
 
     <!-- Data -->
     <Compile Include="Data\SchemaVersion.cs" />
     <Compile Include="Data\InventoryRepository.cs" />
     <Compile Include="Data\ProfileRepository.cs" />
     <Compile Include="Data\SettingsRepository.cs" />
+    <Compile Include="Data\SnapshotRepository.cs" />
 
     <!-- Services -->
     <Compile Include="Services\FileOperationService.cs" />
@@ -133,6 +137,7 @@
     <Compile Include="Services\KeybindParserService.cs" />
     <Compile Include="Services\ProfileService.cs" />
     <Compile Include="Services\LoadOrderService.cs" />
+    <Compile Include="Services\GameVersionSnapshotService.cs" />
 
     <!-- ViewModels -->
     <Compile Include="ViewModels\ViewModelBase.cs" />
@@ -143,6 +148,7 @@
     <Compile Include="ViewModels\ConflictReportViewModel.cs" />
     <Compile Include="ViewModels\KeybindManagerViewModel.cs" />
     <Compile Include="ViewModels\ProfileManagerViewModel.cs" />
+    <Compile Include="ViewModels\GameVersionSnapshotViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\ScanResultsViewModel.cs" />
     <Compile Include="ViewModels\HomeViewModel.cs" />

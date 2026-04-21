@@ -39,6 +39,7 @@ namespace GtavModManager.ViewModels
         public KeybindParserService KeybindParser { get; }
         public ModScannerService Scanner { get; }
         public GameLauncherService Launcher { get; }
+        public GameVersionSnapshotService SnapshotSvc { get; }
 
         // Child ViewModels
         public HomeViewModel Home { get; }
@@ -47,6 +48,7 @@ namespace GtavModManager.ViewModels
         public ConflictReportViewModel ConflictReport { get; }
         public KeybindManagerViewModel KeybindManager { get; }
         public ProfileManagerViewModel ProfileManager { get; }
+        public GameVersionSnapshotViewModel SnapshotManager { get; }
         public SettingsViewModel SettingsVm { get; }
 
         public MainViewModel()
@@ -69,6 +71,7 @@ namespace GtavModManager.ViewModels
 
             var inventoryRepo = new InventoryRepository(inventoryFolder);
             var profileRepo = new ProfileRepository(inventoryFolder);
+            var snapshotRepo = new SnapshotRepository(inventoryFolder);
 
             // Services
             KeybindParser = new KeybindParserService();
@@ -84,6 +87,10 @@ namespace GtavModManager.ViewModels
             ConflictDetection = new ConflictDetectionService();
             ProfileSvc = new ProfileService(profileRepo, Quarantine);
             ProfileSvc.Load();
+            SnapshotSvc = new GameVersionSnapshotService(snapshotRepo);
+            string snapshotStorageRoot = Path.Combine(Settings.GtavRootPath ?? "", "ModManager", "snapshots");
+            SnapshotSvc.Configure(Settings.GtavRootPath ?? "", snapshotStorageRoot);
+            SnapshotSvc.Load();
             LoadOrder = new LoadOrderService();
             LoadOrder.Configure(Settings.GtavRootPath ?? "");
             Scanner = new ModScannerService();
@@ -101,6 +108,7 @@ namespace GtavModManager.ViewModels
             ConflictReport = new ConflictReportViewModel(ConflictDetection, Inventory);
             KeybindManager = new KeybindManagerViewModel(Inventory, ConflictDetection, KeybindParser);
             ProfileManager = new ProfileManagerViewModel(ProfileSvc, Inventory, Settings);
+            SnapshotManager = new GameVersionSnapshotViewModel(SnapshotSvc);
             SettingsVm = new SettingsViewModel(settingsRepo, Settings, rootDetector);
 
             // Wire up events
@@ -121,6 +129,7 @@ namespace GtavModManager.ViewModels
             ConflictReport.Rescan();
             ProfileManager.Reload();
             KeybindManager.Reload();
+            SnapshotManager.Reload();
 
             var activeProfile = ProfileSvc.GetActiveProfile(Settings.ActiveProfileId);
             Home.SetActiveProfileName(activeProfile?.Name ?? "");
