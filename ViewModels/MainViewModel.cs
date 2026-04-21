@@ -88,7 +88,7 @@ namespace GtavModManager.ViewModels
             ProfileSvc = new ProfileService(profileRepo, Quarantine);
             ProfileSvc.Load();
             SnapshotSvc = new GameVersionSnapshotService(snapshotRepo);
-            string snapshotStorageRoot = Path.Combine(Settings.GtavRootPath ?? "", "ModManager", "snapshots");
+            string snapshotStorageRoot = Path.Combine(inventoryFolder, "snapshots");
             SnapshotSvc.Configure(Settings.GtavRootPath ?? "", snapshotStorageRoot);
             SnapshotSvc.Load();
             LoadOrder = new LoadOrderService();
